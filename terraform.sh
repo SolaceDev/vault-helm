@@ -26,6 +26,12 @@ case $command in
 esac
 
 if [[ $init_required == true ]]; then
+    # Remove any previous .terraform; it will be recreated by the Terraform init
+    # command.
+    if [[ -z ${SKIP_REMOVE_DOT_TERRAFORM:-} ]]; then
+        rm -rf .terraform
+    fi
+
     docker run \
             -it \
             --rm \
@@ -38,7 +44,8 @@ if [[ $init_required == true ]]; then
             init \
             -backend-config="bucket=${TF_VAR_project_id:-"maas-vault-dev"}" \
             -backend-config="prefix=terraform/maas-vault-gcp-cluster/$TF_VAR_cluster_id/" \
-            -upgrade
+            -upgrade \
+            -lock=true
 fi
 
 docker run \
