@@ -1,0 +1,4 @@
+[submodule "helm/vault-helm"]
+	path = helm/vault-helm
+	url = git@github.com:SolaceDev/vault-helm.git
+	branch = develop
