@@ -114,8 +114,8 @@ function command_deploy {
 
     ./terraform.sh apply
 
-    helm_project_id=$(./terraform.sh output project_id)
-    helm_static_address=$(./terraform.sh output static_ip_address)
+    helm_project_id=$(./terraform.sh output project_id | tr -d '\r')
+    helm_static_address=$(./terraform.sh output static_ip_address | tr -d '\r')
 
     # Install the cert-manager CRDs
     kubectl apply \
@@ -125,7 +125,7 @@ function command_deploy {
     namespace_cert_manager=cert-manager
 
     # Create a namespace for cert-manager if it doesn't already exist
-    if ! kubectl describe namespaces/$namespace_cert_manager > /dev/null; then
+    if ! kubectl describe namespaces/$namespace_cert_manager > /dev/null 2>&1; then
         kubectl create namespace $namespace_cert_manager
     fi
 
@@ -143,7 +143,7 @@ function command_deploy {
     fi
 
     # Create a namespace for Vault if it doesn't already exist
-    if ! kubectl describe namespaces/$TF_VAR_cluster_id > /dev/null; then
+    if ! kubectl describe namespaces/$TF_VAR_cluster_id > /dev/null 2>&1; then
         kubectl create namespace $TF_VAR_cluster_id
     fi
 
