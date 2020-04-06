@@ -1,0 +1,65 @@
+maas:
+  gcpProject: "maas-vault-dev"
+  lbAddress: "35.237.91.67"
+  kmsProject: "maas-vault-dev"
+  kmsRegion: "global"
+  kmsKeyRing: "maas-vault-dev"
+  kmsCryptoKey: "maas-vault-dev-unseal"
+  bucketName: "maas-vault-dev-vault-dev-data"
+
+global:
+  # Enable TLS
+  tlsDisable: false
+
+server:
+  extraEnvironmentVars:
+    # Required for TLS
+    VAULT_CACERT: /vault/userconfig/vault-server-tls/vault.ca
+  extraVolumes:
+    # Required for TLS
+    - type: secret
+      name: vault-server-tls
+  service:
+    # Required for GCP Layer 4 Loadbalancer (so Vault can terminate SSL)
+    type: LoadBalancer
+  dataStorage:
+    # GCS is used instead of the default Consul
+    enabled: false
+  auditStorage:
+    enabled: true
+  standalone:
+    enabled: false
+  ha:
+    enabled: true
+    # Since Vault HA is active/standby, replicas do not help with horizontal scaling
+    # Issues were encountered configuring the LB to route to the active node, so this is being avoided by using 1 replica for now
+    replicas: 1
+    config: |
+      api_addr     = "https://{{ .Values.maas.lbAddress }}"
+      cluster_addr = "https://HOST_IP:8201"
+
+      log_level = "warn"
+
+      ui = true
+
+      # Required for auto-unseal
+      seal "gcpckms" {
+         project     = "{{ .Values.maas.kmsProject }}"
+         region      = "{{ .Values.maas.kmsRegion }}"
+         key_ring    = "{{ .Values.maas.kmsKeyRing }}"
+         crypto_key  = "{{ .Values.maas.kmsCryptoKey }}"
+      }
+
+      listener "tcp" {
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+        tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
+        tls_client_ca_file = "/vault/userconfig/vault-server-tls/vault.ca"
+      }
+
+      # Override storage to use GCS instead of Consul
+      storage "gcs" {
+        bucket     = "{{ .Values.maas.bucketName }}"
+        ha_enabled = "true"
+      }

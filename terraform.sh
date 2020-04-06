@@ -37,9 +37,7 @@ if [[ $init_required == true ]]; then
             --rm \
             -v $HOME/.config/gcloud:/root/.config/gcloud:ro \
             -v $(pwd):/work \
-            -v $GOOGLE_APPLICATION_CREDENTIALS:/root/service-account.json \
             -w /work \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/root/service-account.json \
             $terraform_image \
             init \
             -backend-config="bucket=${TF_VAR_project_id:-"maas-vault-dev"}" \
@@ -56,8 +54,6 @@ docker run \
         -e TF_VAR_cluster_id \
         -v $HOME/.config/gcloud:/root/.config/gcloud:ro \
         -v $(pwd):/work \
-        -v $GOOGLE_APPLICATION_CREDENTIALS:/root/service-account.json \
         -w /work \
-        -e GOOGLE_APPLICATION_CREDENTIALS=/root/service-account.json \
         $terraform_image \
         $command "$@"
