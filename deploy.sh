@@ -142,6 +142,12 @@ function command_deploy {
         helm upgrade cert-manager jetstack/cert-manager --namespace $namespace_cert_manager --version 0.14.1
     fi
 
+    # Create a namespace for Vault if it doesn't already exist
+    if ! kubectl describe namespaces/$TF_VAR_cluster_id > /dev/null; then
+        kubectl create namespace $TF_VAR_cluster_id
+    fi
+
+
     # Install or upgrade the helm release for Vault
     if [[ -z $(helm list --namespace ${TF_VAR_cluster_id} --short --filter vault) ]]; then
         helm_command=install
