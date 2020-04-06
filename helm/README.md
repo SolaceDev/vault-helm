@@ -15,7 +15,7 @@ Install Vault using Helm 3.
 The following must be run with access to the key, certificate, and CA (adjust the `--from-file` parameters to match the file location and names):
 ```$xslt
 kubectl create secret generic vault-server-tls \
-        --namespace default \
+        --namespace <namespace> \
         --from-file=vault.key=./vault.key \
         --from-file=vault.crt=./vault.crt \
         --from-file=vault.ca=./vault.ca
@@ -26,6 +26,6 @@ kubectl create secret generic vault-server-tls \
     * The only changes required are to the `maas` object
 
 ## Installation
-`helm install --set <Overridden configuration values> -f maas-values.yaml <Vault instance name> vault-helm`
+`helm install --namespace <namespace> --set <Overridden configuration values> -f maas-values.yaml <Vault instance name> vault-helm`
 * Vault instance name should be in format `vault-<env>` where env is dev, prod, etc.
 * Overridden configuration values are in the format: `maas.gcpProject=maas-vault-prod,maas.lbAddress=1.2.3.4`
