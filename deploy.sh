@@ -22,10 +22,6 @@ case $command_name in
     ;;
 esac
 
-# Invoke the appropriate command_... function, based on the value of the
-# command_name variable.
-command_$command_name "$@"
-
 #
 # command_help:
 #   This function handles running the script actions for the help command.
@@ -133,30 +129,30 @@ function command_deploy {
         kubectl create namespace $namespace_cert_manager
     fi
 
-    # Make sure the jetstack Helm repo exist.
+    # Make sure the jetstack Helm repo exists.
     helm repo add jetstack https://charts.jetstack.io
 
     # Update the local cache of Helm repos.
     helm repo update
 
     # Install or upgrade the helm release for cert-manager
-    if [[ -z $(helm list --namespace ^${namespace_cert_manager}$ --short --filter cert-manager) ]]; then
+    if [[ -z $(helm list --namespace ${namespace_cert_manager} --short --filter cert-manager) ]]; then
         helm install cert-manager jetstack/cert-manager --namespace $namespace_cert_manager --version 0.14.1
     else
         helm upgrade cert-manager jetstack/cert-manager --namespace $namespace_cert_manager --version 0.14.1
     fi
 
     # Install or upgrade the helm release for Vault
-    if [[ -z $(helm list --namespace ^${TF_VAR_cluster_id}$ --short --filter vault) ]]; then
+    if [[ -z $(helm list --namespace ${TF_VAR_cluster_id} --short --filter vault) ]]; then
         helm_command=install
     else
         helm_command=upgrade
     fi
 
     helm $helm_command \
-            vault helm/vault-helm \
+            vault ./helm/vault-helm \
             --namespace $TF_VAR_cluster_id \
-            --values helm/maas-values.yaml \
+            --values ./helm/maas-values.yaml \
             --set maas.gcpProject=$helm_project_id \
             --set maas.lbAddress=$helm_static_address \
             --set maas.kmsProject=$helm_project_id \
@@ -165,3 +161,6 @@ function command_deploy {
             --set maas.bucketName=${helm_project_id}-${TF_VAR_cluster_id}-data
 }
 
+# Invoke the appropriate command_... function, based on the value of the
+# command_name variable.
+command_$command_name "$@"
