@@ -88,29 +88,20 @@ resource "google_service_account" "cluster" {
     project      = var.project_id
 }
 
-resource "google_project_iam_binding" "cluster_log_writer" {
+resource "google_project_iam_member" "cluster_log_writer" {
     project = var.project_id
     role    = "roles/logging.logWriter"
-
-    members = [
-        "serviceAccount:${google_service_account.cluster.email}",
-    ]
+    member  = "serviceAccount:${google_service_account.cluster.email}"
 }
 
-resource "google_project_iam_binding" "cluster_metrics_writer" {
+resource "google_project_iam_member" "cluster_metrics_writer" {
     project = var.project_id
     role    = "roles/monitoring.metricWriter"
-
-    members = [
-        "serviceAccount:${google_service_account.cluster.email}"
-    ]
+    member  = "serviceAccount:${google_service_account.cluster.email}"
 }
 
-resource "google_project_iam_binding" "cluster_storage_object_admin" {
+resource "google_project_iam_member" "cluster_storage_object_admin" {
     project = var.project_id
     role    = "roles/storage.objectAdmin"
-
-    members = [
-        "serviceAccount:${google_service_account.cluster.email}"
-    ]
+    member  = "serviceAccount:${google_service_account.cluster.email}"
 }
