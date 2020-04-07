@@ -112,10 +112,10 @@ function command_deploy {
         fi
     fi
 
-    ./terraform.sh apply
+    ./terraform/terraform.sh apply
 
-    helm_project_id=$(./terraform.sh output project_id | tr -d '\r')
-    helm_static_address=$(./terraform.sh output static_ip_address | tr -d '\r')
+    helm_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
+    helm_static_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
     # Install the cert-manager CRDs
     kubectl apply \
