@@ -11,10 +11,10 @@ The **helm** subdirectory contains a [README.md](./helm/README.md) document
 to describe the Helm charts.
 
 ## Deployment
-The **deploy.sh** scripts glues both of these projects together for a simple
+The **deploy_local.sh** scripts glues both of these projects together for a simple
 user experience to deploy both the infrastructure and Helm charts together.
 
-The **deploy.sh** script supports two operations:
+The **deploy_local.sh** script supports two operations:
 1. *deploy*; and
 2. *destroy*.
 

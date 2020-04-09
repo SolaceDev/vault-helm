@@ -8,20 +8,6 @@ done
 
 export VAULT_ADDR
 
-#
-# vault:
-#   This function mimicks the vault binary by running a Docker container with
-#   the Vault image.
-#
-function vault {
-    docker run -it \
-        --rm \
-        --name vault \
-        -e VAULT_ADDR \
-        vault:latest \
-        vault "$@"
-}
-
 vault status
 
 if [[ -z ${VAULT_TOKEN:-} ]]; then
