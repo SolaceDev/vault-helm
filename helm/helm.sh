@@ -16,19 +16,7 @@ while [[ -z $HELM_cluster_id ]]; do
     read -p "Specify the Vault cluster ID: " HELM_cluster_id
 done
 
-while [[ -z $HELM_project_id ]]; do
-    echo "No GCP Project ID specified."
-    read -p "Specify the GCP Project ID: " HELM_project_id
-done
-
-while [[ -z $HELM_lb_address ]]; do
-    echo "No Load Balancer Address specified."
-    read -p "Specify the Load Balancer Address: " HELM_lb_address
-done
-
 export HELM_cluster_id
-export HELM_project_id
-export HELM_lb_address
 
 cluster_issuer_name=${HELM_CLUSTER_ISSUER_NAME:-"letsencrypt"}
 cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
@@ -65,10 +53,13 @@ function command_help {
     echo "  missing, the script will prompt for a value."
     echo ""
     echo "  HELM_cluster_id     The unique name of the Vault cluster.  This value is used as"
-    echo "                      the Kubernetes namespace name."
-    echo "  HELM_project_id     The GCP project ID of the Vault cluster."
+    echo "                      the Kubernetes namespace name.  This variable is needed for the"
+    echo "                      deploy and destroy commands."
+    echo "  HELM_project_id     The GCP project ID of the Vault cluster.  This variable is only"
+    echo "                      needed for the deploy command."
     echo "  HELM_lb_address     The IP address created and reserved for the Vault cluster's"
-    echo "                      load balancer."
+    echo "                      load balancer.  This variable is only needed for the deploy"
+    echo "                      command."
     echo ""
 
     exit 0
@@ -108,6 +99,20 @@ function get_helm_command_for_release {
 #   Handles the case where this script is invoked with the deploy command.
 #
 function command_deploy {
+    # The deploy command needs 2 additional environment variables to be set.
+    while [[ -z $HELM_project_id ]]; do
+        echo "No GCP Project ID specified."
+        read -p "Specify the GCP Project ID: " HELM_project_id
+    done
+
+    while [[ -z $HELM_lb_address ]]; do
+        echo "No Load Balancer Address specified."
+        read -p "Specify the Load Balancer Address: " HELM_lb_address
+    done
+
+    export HELM_project_id
+    export HELM_lb_address
+
     # Install the cert-manager CRDs
     kubectl apply \
             --validate=false \
