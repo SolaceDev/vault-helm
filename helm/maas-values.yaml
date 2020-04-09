@@ -11,10 +11,14 @@ global:
   # Enable TLS
   tlsDisable: false
 
+# Disabling injector
+injector:
+  enabled: false
+
 server:
   extraEnvironmentVars:
     # Required for TLS
-    VAULT_CACERT: /vault/userconfig/vault-server-tls/vault.ca
+    VAULT_CACERT: /vault/userconfig/vault-server-tls/ca.crt
   extraVolumes:
     # Required for TLS
     - type: secret
@@ -38,7 +42,7 @@ server:
       api_addr     = "https://{{ .Values.maas.lbAddress }}"
       cluster_addr = "https://HOST_IP:8201"
 
-      log_level = "warn"
+      log_level = "trace"
 
       ui = true
 
@@ -53,9 +57,8 @@ server:
       listener "tcp" {
         address = "[::]:8200"
         cluster_address = "[::]:8201"
-        tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
-        tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
-        tls_client_ca_file = "/vault/userconfig/vault-server-tls/vault.ca"
+        tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
+        tls_key_file  = "/vault/userconfig/vault-server-tls/tls.key"
       }
 
       # Override storage to use GCS instead of Consul
