@@ -121,14 +121,8 @@ function command_deploy {
     # Create the cert-manager namespace if it doesn't exist
     create_namespace_if_missing "cert-manager"
     
-    # Make sure the jetstack Helm repo exists.
-    helm repo add jetstack https://charts.jetstack.io
-
-    # Update the local cache of Helm repos.
-    helm repo update
-
     # Run the appropriate Helm command
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") jetstack/cert-manager --namespace "cert-manager" --version 0.14.1
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") ./cert-manager/deploy/charts/cert-manager --namespace "cert-manager" --version 0.14.1
 
     # Create a ClusterIssuer resource
     kubectl apply -f - <<EOF
