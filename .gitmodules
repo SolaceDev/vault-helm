@@ -2,3 +2,7 @@
 	path = helm/vault-helm
 	url = git@github.com:SolaceDev/vault-helm.git
 	branch = develop
+[submodule "helm/cert-manager"]
+	path = helm/cert-manager
+	url = git@github.com:SolaceDev/cert-manager.git
+	branch = develop
