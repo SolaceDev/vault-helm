@@ -11,7 +11,7 @@ fi
 command_name=$1
 shift
 
-while [[ -z $HELM_cluster_id ]]; do
+while [[ -z ${HELM_cluster_id:-} ]]; do
     echo "No Vault Cluster ID specified."
     read -p "Specify the Vault cluster ID: " HELM_cluster_id
 done
