@@ -83,7 +83,7 @@ function command_destroy {
     fi
 
     export TF_VAR_cluster_id=$1
-    export HELM_cluster_id
+    export HELM_cluster_id=$1
 
     if (( $# == 2 )); then
         export TF_VAR_project_id=$2
