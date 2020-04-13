@@ -13,7 +13,7 @@ shift
 
 # Make sure a recognized command was provided.
 case $command_name in
-  deploy|destroy|help)
+  deploy|destroy|test|help)
     ;;
   *)
     echo "ERROR: Unrecognized deploy.sh command: $command_name"
@@ -124,6 +124,14 @@ function command_deploy {
     gcloud container clusters get-credentials ${TF_VAR_cluster_id} --region ${TF_VAR_region:-"us-east1"} --project ${TF_VAR_project_id:-"maas-vault-dev"}
 
     ./helm/helm.sh deploy
+}
+
+function command_test {
+  export TF_VAR_cluster_id=$1
+  export HELM_cluster_id=$1
+
+  ./terraform/terraform.sh validate
+  ./helm/helm.sh test
 }
 
 # Invoke the appropriate command_... function, based on the value of the

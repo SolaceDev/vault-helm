@@ -196,4 +196,8 @@ function command_destroy {
     helm uninstall "cert-manager" --namespace cert-manager || true
 }
 
+function command_test {
+    helm lint ./vault-helm
+}
+
 command_$command_name "$@"
