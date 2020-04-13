@@ -73,7 +73,7 @@ function command_help {
 function create_namespace_if_missing {
     local namespace=$1
 
-    if ! kubectl describe namespaces/$namesace > /dev/null 2>&1; then
+    if ! kubectl describe namespaces/$namespace > /dev/null 2>&1; then
         kubectl create namespace $namespace
     fi
 }
@@ -120,20 +120,23 @@ function command_deploy {
 
     # Create the cert-manager namespace if it doesn't exist
     create_namespace_if_missing "cert-manager"
-    
+
+    # Add the jetstack/cert-manager repo
+    helm repo add jetstack https://charts.jetstack.io
+
+    # Make sure Helm repos are up to date.
+    helm repo update
+
     # Run the appropriate Helm command
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") ./cert-manager/deploy/charts/cert-manager --namespace "cert-manager" --version 0.14.1
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.14.1
 
     # Create a ClusterIssuer resource
-    kubectl apply -f - <<EOF
-apiVersion: cert-manager.io/v1alpha2
+    echo "apiVersion: cert-manager.io/v1alpha2
 kind: ClusterIssuer
 metadata:
   name: ${cluster_issuer_name}
 spec:
   acme:
-    # You must replace this email address with your own.
-    # Let's Encrypt will use this to contact you about expiring
     # certificates, and issues related to your account.
     email: nobody@solace.com
     server: ${cluster_issuer_server}
@@ -142,14 +145,12 @@ spec:
     solvers:
     - dns01:
         clouddns:
-            project: ${HELM_project_id}
-EOF
+            project: ${HELM_project_id}" | kubectl apply -f -
 
     # Create the Vault cluster namespace if it doesn't exist
     create_namespace_if_missing $HELM_cluster_id
 
-    kubectl apply -f - <<EOF
-apiVersion: cert-manager.io/v1alpha2
+    echo "apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: vault-certificate
@@ -161,8 +162,7 @@ spec:
     name: ${cluster_issuer_name}
   commonName: ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
   dnsNames:
-  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
-EOF
+  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply -f -
 
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
