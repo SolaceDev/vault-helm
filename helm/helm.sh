@@ -87,7 +87,7 @@ function get_helm_command_for_release {
     local namespace=$1
     local release_name=$2
 
-    if [[ -z helm list --namespace $namespace --short --filter $release_name ]]; then
+    if [[ -z $(helm list --namespace $namespace --short --filter $release_name) ]]; then
         echo "install"
     else
         echo "upgrade"
@@ -184,16 +184,16 @@ EOF
 #
 function command_destroy {
     # Remove the Vault Helm release
-    helm uninstall "vault" --namespace $HELM_cluster_id
+    helm uninstall "vault" --namespace $HELM_cluster_id || true
 
     # Remove the vault-certificate Certificate resource
-    kubectl delete certificates/vault-certificate --namespace $HELM_cluster_id
+    kubectl delete certificates/vault-certificate --namespace $HELM_cluster_id || true
 
     # Remove the letsencrypt ClusterIssuer
-    kubectl delete clusterissuers/$cluster_issuer_name
+    kubectl delete clusterissuers/$cluster_issuer_name || true
 
     # Remove the cert-manager Helm release
-    helm uninstall "cert-manager" --namespace cert-manager
+    helm uninstall "cert-manager" --namespace cert-manager || true
 }
 
 command_$command_name "$@"
