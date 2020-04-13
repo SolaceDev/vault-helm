@@ -21,7 +21,7 @@ export TF_VAR_cluster_id
 init_required=false
 
 case $command in
-    apply|destroy|force-unlock|import|plan|refresh)
+    apply|destroy|force-unlock|import|plan|refresh|validate)
         init_required=true
         ;;
 esac
