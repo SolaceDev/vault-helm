@@ -88,7 +88,7 @@ function command_destroy {
         export TF_VAR_project_id=$2
     fi
 
-    ./terraform.sh destroy
+    ./terraform/terraform.sh destroy
 }
 
 #
@@ -117,11 +117,13 @@ function command_deploy {
     helm_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     helm_static_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
+    gcloud container clusters get-credentials ${TF_VAR_cluster_id} --region ${TF_VAR_region:-"us-east1"} --project ${TF_VAR_project_id:-"maas-vault-dev"}
+
     # Install the cert-manager CRDs
     kubectl apply \
             --validate=false \
             -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager-legacy.crds.yaml
-    
+
     namespace_cert_manager=cert-manager
 
     # Create a namespace for cert-manager if it doesn't already exist

@@ -4,8 +4,6 @@ set -eu${DEBUG+x}o pipefail
 # Make sure to switch the current directory to the one where this script is located.
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-terraform_image=${TERRAFORM_IMAGE:-hashicorp/terraform:0.12.23}
-
 if [[ $# == 0 ]]; then
     set -- help
 fi
@@ -43,32 +41,10 @@ if [[ $init_required == true ]]; then
         rm -rf .terraform
     fi
 
-    docker run \
-            -it \
-            --rm \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/root/service_account.json \
-            -v $HOME/.config/gcloud:/root/.config/gcloud:ro \
-            -v $GOOGLE_APPLICATION_CREDENTIALS:/root/service_account.json:ro \
-            -v $(pwd):/work \
-            -w /work \
-            $terraform_image \
-            init \
-            -backend-config="bucket=${TF_VAR_project_id:-"maas-vault-dev"}" \
-            -backend-config="prefix=terraform/maas-vault-gcp-cluster/$TF_VAR_cluster_id/" \
-            -upgrade \
-            -lock=true
+    terraform init \
+                -backend-config="bucket=${TF_VAR_project_id:-"maas-vault-dev"}" \
+                -backend-config="prefix=terraform/maas-vault-gcp-cluster/$TF_VAR_cluster_id/" \
+                -lock=true
 fi
 
-docker run \
-        -it \
-        --rm \
-        -e TF_VAR_project_id \
-        -e TF_VAR_region \
-        -e TF_VAR_cluster_id \
-        -e GOOGLE_APPLICATION_CREDENTIALS=/root/service_account.json \
-        -v $HOME/.config/gcloud:/root/.config/gcloud:ro \
-        -v $GOOGLE_APPLICATION_CREDENTIALS:/root/service_account.json:ro \
-        -v $(pwd):/work \
-        -w /work \
-        $terraform_image \
-        $command "$@"
+terraform $command "$@"
