@@ -14,17 +14,4 @@ resource "google_storage_bucket" "primary" {
     force_destroy = true
     location      = "US"
     project       = var.project_id
-
-    versioning {
-        enabled = true
-    }
-}
-
-resource "google_storage_bucket_iam_binding" "service_account" {
-    bucket = google_storage_bucket.primary.name
-    role   = "roles/storage.objectAdmin"
-
-    members = [
-        "serviceAccount:${google_service_account.cluster.email}",
-    ]
 }
