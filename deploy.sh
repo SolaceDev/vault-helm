@@ -83,10 +83,13 @@ function command_destroy {
     fi
 
     export TF_VAR_cluster_id=$1
+    export HELM_cluster_id=$1
 
     if (( $# == 2 )); then
         export TF_VAR_project_id=$2
     fi
+
+    ./helm/helm.sh destroy
 
     ./terraform/terraform.sh destroy
 }
@@ -112,61 +115,15 @@ function command_deploy {
         fi
     fi
 
-    ./terraform/terraform.sh apply
+    export HELM_cluster_id=$1
+    export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
+    export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    helm_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
-    helm_static_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
+    ./terraform/terraform.sh apply
 
     gcloud container clusters get-credentials ${TF_VAR_cluster_id} --region ${TF_VAR_region:-"us-east1"} --project ${TF_VAR_project_id:-"maas-vault-dev"}
 
-    # Install the cert-manager CRDs
-    kubectl apply \
-            --validate=false \
-            -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager-legacy.crds.yaml
-
-    namespace_cert_manager=cert-manager
-
-    # Create a namespace for cert-manager if it doesn't already exist
-    if ! kubectl describe namespaces/$namespace_cert_manager > /dev/null 2>&1; then
-        kubectl create namespace $namespace_cert_manager
-    fi
-
-    # Make sure the jetstack Helm repo exists.
-    helm repo add jetstack https://charts.jetstack.io
-
-    # Update the local cache of Helm repos.
-    helm repo update
-
-    # Install or upgrade the helm release for cert-manager
-    if [[ -z $(helm list --namespace ${namespace_cert_manager} --short --filter cert-manager) ]]; then
-        helm install cert-manager jetstack/cert-manager --namespace $namespace_cert_manager --version 0.14.1
-    else
-        helm upgrade cert-manager jetstack/cert-manager --namespace $namespace_cert_manager --version 0.14.1
-    fi
-
-    # Create a namespace for Vault if it doesn't already exist
-    if ! kubectl describe namespaces/$TF_VAR_cluster_id > /dev/null 2>&1; then
-        kubectl create namespace $TF_VAR_cluster_id
-    fi
-
-
-    # Install or upgrade the helm release for Vault
-    if [[ -z $(helm list --namespace ${TF_VAR_cluster_id} --short --filter vault) ]]; then
-        helm_command=install
-    else
-        helm_command=upgrade
-    fi
-
-    helm $helm_command \
-            vault ./helm/vault-helm \
-            --namespace $TF_VAR_cluster_id \
-            --values ./helm/maas-values.yaml \
-            --set maas.gcpProject=$helm_project_id \
-            --set maas.lbAddress=$helm_static_address \
-            --set maas.kmsProject=$helm_project_id \
-            --set maas.kmsKeyRing=$helm_project_id \
-            --set maas.kmsCryptoKey=${helm_project_id}-unseal \
-            --set maas.bucketName=${helm_project_id}-${TF_VAR_cluster_id}-data
+    ./helm/helm.sh deploy
 }
 
 # Invoke the appropriate command_... function, based on the value of the
