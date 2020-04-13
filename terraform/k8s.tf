@@ -83,7 +83,7 @@ resource "google_container_node_pool" "gke" {
 }
 
 resource "google_service_account" "cluster" {
-    account_id   = var.cluster_id
+    account_id   = "${var.cluster_id}-sa"
     display_name = "${var.cluster_id} Cluster Noces Service Account"
     project      = var.project_id
 }
