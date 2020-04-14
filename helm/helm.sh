@@ -197,7 +197,7 @@ function command_destroy {
 }
 
 function command_test {
-    helm lint ./vault-helm
+    helm lint -f maas-values.yaml ./vault-helm
 }
 
 command_$command_name "$@"
