@@ -1,11 +1,17 @@
-#!/bin/bash
+#!/bin/sh
 set -eu${DEBUG+x}o pipefail
 
-base_image_tag=${USER}-vault-base:latest
-image_tag=${USER}-vault:latest
+docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
+image_tag=$(id -un)-vault:latest
 
-(cd baseimage && docker build . -t ${base_image_tag})
+if [[ -z ${VAULT_INSTALLER_BASE_IMAGE_TAG:-} ]]; then
+  base_image_tag=$(id -un)-vault-base:latest
+  (cd baseimage && docker build . -t ${base_image_tag})
+else
+  base_image_tag="${VAULT_INSTALLER_BASE_IMAGE_TAG}"
+fi
+
 docker build . --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
-docker run -it --rm -v $HOME/.config/gcloud:/root/.config/gcloud:rw ${image_tag} $@
+docker run --rm ${docker_args} ${image_tag} $@
