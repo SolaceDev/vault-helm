@@ -121,8 +121,6 @@ function command_deploy {
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    gcloud container clusters get-credentials ${TF_VAR_cluster_id} --region ${TF_VAR_region:-"us-east1"} --project ${TF_VAR_project_id:-"maas-vault-dev"}
-
     ./helm/helm.sh deploy
 }
 

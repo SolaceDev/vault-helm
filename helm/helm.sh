@@ -21,6 +21,8 @@ export HELM_cluster_id
 cluster_issuer_name=${HELM_CLUSTER_ISSUER_NAME:-"letsencrypt"}
 cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
 
+gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region:-"us-east1"} --project ${HELM_project_id:-"maas-vault-dev"}
+
 #
 # command_help:
 #   Handles the case where this script is invoked with the help command.
@@ -99,6 +101,13 @@ function get_helm_command_for_release {
 #   Handles the case where this script is invoked with the deploy command.
 #
 function command_deploy {
+    # Elevating privilege to avoid permissions errors when creating RBACs.
+    if ! kubectl get clusterrolebindings/cluster-admin-binding ; then
+        kubectl create clusterrolebinding cluster-admin-binding \
+                --clusterrole=cluster-admin \
+                --user=$(gcloud config get-value core/account)
+    fi
+
     # The deploy command needs 2 additional environment variables to be set.
     while [[ -z $HELM_project_id ]]; do
         echo "No GCP Project ID specified."
@@ -129,6 +138,11 @@ function command_deploy {
 
     # Run the appropriate Helm command
     helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.14.1
+
+    # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
+    while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
+        sleep 1
+    done
 
     # Create a ClusterIssuer resource
     echo "apiVersion: cert-manager.io/v1alpha2
@@ -189,11 +203,20 @@ function command_destroy {
     # Remove the vault-certificate Certificate resource
     kubectl delete certificates/vault-certificate --namespace $HELM_cluster_id || true
 
+    # Remove the cluster_id namespace
+    kubectl delete namespaces/$HELM_cluster_id || true
+
     # Remove the letsencrypt ClusterIssuer
     kubectl delete clusterissuers/$cluster_issuer_name || true
 
     # Remove the cert-manager Helm release
     helm uninstall "cert-manager" --namespace cert-manager || true
+
+    # Remove the cert-manager namespace
+    kubectl delete namespaces/cert-manager || true
+
+    # Remove the cluster-admin-binding
+    kubectl delete clusterrolebindings/cluster-admin-binding || true
 }
 
 function command_test {
