@@ -130,7 +130,7 @@ function command_test {
   export TF_VAR_cluster_id=$1
   export HELM_cluster_id=$1
 
-  ./terraform/terraform.sh validate
+  # ./terraform/terraform.sh validate
   ./helm/helm.sh test
 }
 

@@ -27,4 +27,13 @@ ENV VAULT_VERSION=1.4.0
 RUN wget -q https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip && \
     unzip vault_${VAULT_VERSION}_linux_amd64.zip -d /usr/bin
 
+# Pre-install plugins
+RUN mkdir -p /root/.terraform.d/plugins/linux_amd64
+ENV TF_GOOGLE_PLUGIN_VERSION="3.16.0"
+ENV TF_GOOGLE_BETA_PLUGIN_VERSION="3.16.0"
+RUN wget -q https://releases.hashicorp.com/terraform-provider-google/${TF_GOOGLE_PLUGIN_VERSION}/terraform-provider-google_${TF_GOOGLE_PLUGIN_VERSION}_linux_amd64.zip && \
+    unzip terraform-provider-google_${TF_GOOGLE_PLUGIN_VERSION}_linux_amd64.zip -d /root/.terraform.d/plugins/linux_amd64 && \
+    wget -q https://releases.hashicorp.com/terraform-provider-google-beta/${TF_GOOGLE_BETA_PLUGIN_VERSION}/terraform-provider-google-beta_${TF_GOOGLE_BETA_PLUGIN_VERSION}_linux_amd64.zip && \
+    unzip terraform-provider-google-beta_${TF_GOOGLE_BETA_PLUGIN_VERSION}_linux_amd64.zip -d /root/.terraform.d/plugins/linux_amd64
+
 ENTRYPOINT ["/bin/bash"]
