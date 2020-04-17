@@ -91,7 +91,8 @@ pipeline {
             } catch(err) {
               currentBuild.result = 'FAILURE'
               echo "Failed: ${err}"
-              input message: "Failed, will uninstall. Proceed?"
+              // Uncomment when debugging failed builds
+              // input message: "Failed, will uninstall. Proceed?"
             }
           }
         }
