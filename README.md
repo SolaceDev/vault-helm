@@ -26,13 +26,6 @@ The *destroy* operation simply runs a **Terraform** *destroy* command.  Since
 the Helm releases don't need to be uninstalled when the entire GKE cluster is
 deleted.
 
-## Test Strategy
-A basic sanity test consists of:
-1. Deploying the version of the infrastructure that exists in production (indicated by the `production` tag)
-1. Initializing and unsealing the Vault and adding test data
-1. Performing an upgrade to the latest version
-1. Testing that the upgraded Vault instance is running, unsealed, and test data can be retrieved
-
 ### Reference Environments
 This project is designed to easily deploy ephemeral instances for development
 (of Vault features) activities.  However, there are some well-known
