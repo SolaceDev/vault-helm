@@ -6,12 +6,12 @@ image_tag=$(id -un)-vault:latest
 
 if [[ -z ${VAULT_INSTALLER_BASE_IMAGE_TAG:-} ]]; then
   base_image_tag=$(id -un)-vault-base:latest
-  (cd baseimage && docker build . -t ${base_image_tag})
+  (cd baseimage && docker build . -q -t ${base_image_tag})
 else
   base_image_tag="${VAULT_INSTALLER_BASE_IMAGE_TAG}"
 fi
 
-docker build . --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
+docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
 docker run --rm ${docker_args} ${image_tag} $@

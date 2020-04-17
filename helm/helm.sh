@@ -21,7 +21,7 @@ export HELM_cluster_id
 cluster_issuer_name=${HELM_CLUSTER_ISSUER_NAME:-"letsencrypt"}
 cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
 
-gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region:-"us-east1"} --project ${HELM_project_id:-"maas-vault-dev"}
+gcloud auth activate-service-account --key-file=${HOME}/.config/gcloud/application_default_credentials.json
 
 #
 # command_help:
@@ -101,6 +101,8 @@ function get_helm_command_for_release {
 #   Handles the case where this script is invoked with the deploy command.
 #
 function command_deploy {
+    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region:-"us-east1"} --project ${HELM_project_id:-"maas-vault-dev"}
+
     # Elevating privilege to avoid permissions errors when creating RBACs.
     if ! kubectl get clusterrolebindings/cluster-admin-binding ; then
         kubectl create clusterrolebinding cluster-admin-binding \
@@ -189,7 +191,6 @@ spec:
             --set maas.kmsKeyRing=$HELM_project_id \
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
-
 }
 
 #
@@ -197,6 +198,8 @@ spec:
 #   Handles the case where this script is invoked with the destroy command.
 #
 function command_destroy {
+    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region:-"us-east1"} --project ${HELM_project_id:-"maas-vault-dev"}
+
     # Remove the Vault Helm release
     helm uninstall "vault" --namespace $HELM_cluster_id || true
 
@@ -219,7 +222,7 @@ function command_destroy {
     kubectl delete clusterrolebindings/cluster-admin-binding || true
 }
 
-function command_test {
+function command_lint {
     helm lint -f maas-values.yaml ./vault-helm
 }
 

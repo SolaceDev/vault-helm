@@ -13,7 +13,7 @@ shift
 
 # Make sure a recognized command was provided.
 case $command_name in
-  deploy|destroy|test|help)
+  deploy|destroy|validate|help|vault|vaultinit)
     ;;
   *)
     echo "ERROR: Unrecognized deploy.sh command: $command_name"
@@ -63,6 +63,10 @@ function command_help {
     echo "      The project_id argument is optional.  If it is omitted, the default value"
     echo "      maas-vault-dev is used, which corresponds to the Vault development GCP"
     echo "      project."
+    echo ""
+    echo "  validate cluster_id [ project_id ]"
+    echo "      Validate the Terraform configuration and lint the Helm charts"
+    echo "      cluster."
     echo ""
     echo "  help"
     echo "      The help command prints this message and exits."
@@ -124,12 +128,46 @@ function command_deploy {
     ./helm/helm.sh deploy
 }
 
-function command_test {
+function command_validate {
   export TF_VAR_cluster_id=$1
   export HELM_cluster_id=$1
 
-  # ./terraform/terraform.sh validate
-  ./helm/helm.sh test
+  ./terraform/terraform.sh validate
+  ./helm/helm.sh lint
+}
+
+function command_vaultinit {
+  export HELM_cluster_id=$1
+  DEBUG=1
+
+  retries=0
+  retry_interval=${2:-5}
+  max_retries=${3:-30}
+
+  export VAULT_ADDR="https://${HELM_cluster_id}.${HELM_project_id:-"maas-vault-dev"}.mymaas.net:8200"
+
+  while vault status; [ $? -eq 1 ]; do
+    retries=$((retries+1))
+
+    if [[ $retries -ge $max_retries ]]; then
+      exit 1
+    fi
+
+    sleep $retry_interval
+  done
+
+  vault_init_root_token=$(vault operator init -format=yaml | grep root_token | sed 's/.*: //')
+  for i in 1 2 3 4 5; do vault login ${vault_init_root_token} && break || sleep 2; done
+}
+
+function command_vault {
+  export HELM_cluster_id=$1
+  shift
+
+  export VAULT_ADDR="https://${HELM_cluster_id}.${HELM_project_id:-"maas-vault-dev"}.mymaas.net:8200"
+
+  echo "Running vault $@"
+  vault $@
 }
 
 # Invoke the appropriate command_... function, based on the value of the

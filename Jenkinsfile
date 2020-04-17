@@ -39,16 +39,71 @@ pipeline {
         returnStdout: true
     )
     IMAGE_TAG = "${GIT_BRANCH}-${GIT_COMMIT_SHORT}"
+    TF_CLI_ARGS = "-no-color"
+    TF_CLI_ARGS_apply = "-auto-approve"
+    TF_CLI_ARGS_destroy = "-auto-approve"
     VAULT_INSTALLER_BASE_IMAGE_TAG = "868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-installer-base:0.1.0"
-    VAULT_INSTALLER_DOCKER_ARGS = " "
+    VAULT_INSTALLER_DOCKER_ARGS = "-v /root/.config/gcloud:/root/.config/gcloud:rw -v /root/.vault-token:/root/.vault-token:rw -e TF_CLI_ARGS_apply -e TF_CLI_ARGS -e TF_CLI_ARGS_destroy -e TF_IN_AUTOMATION=true"
+    GCP_CREDS = vault path: "gcp/key/maas-vault-gcp-cluster-maas-vault-dev", key: 'private_key_data', engineVersion: '1'
+    VAULT_NAME = "vt-${GIT_COMMIT_SHORT}"
   }
 
   stages {
-    stage('Test') {
+    stage('Prepare environment') {
       steps {
         container('docker') {
           script {
-            sh "./deploy_local.sh test vault-test"
+            currentBuild.displayName = "${VAULT_NAME}"
+            sh "mkdir -p ~/.config/gcloud"
+            sh "echo ${GCP_CREDS} | base64 -d > ~/.config/gcloud/application_default_credentials.json"
+            sh "touch ~/.vault-token"
+          }
+        }
+      }
+    }
+    stage('Validate templates') {
+      steps {
+        container('docker') {
+          script {
+            sh "./deploy_local.sh validate ${VAULT_NAME}"
+          }
+        }
+      }
+    }
+    stage('Install Vault') {
+      steps {
+        container('docker') {
+          script {
+            sh "./deploy_local.sh deploy ${VAULT_NAME}"
+          }
+        }
+      }
+    }
+    stage('Test Vault') {
+      steps {
+        container('docker') {
+          script {
+            try {
+              sh "./deploy_local.sh vaultinit ${VAULT_NAME} 60"
+              sh "./deploy_local.sh vault ${VAULT_NAME} secrets enable -tls-skip-verify -version=2 -path=secrets kv"
+              sh "./deploy_local.sh vault ${VAULT_NAME} kv put -tls-skip-verify secrets/my-secret my-value=${GIT_COMMIT_SHORT}"
+              sh "./deploy_local.sh vault ${VAULT_NAME} kv get -tls-skip-verify -field=my-value  secrets/my-secret"
+            } catch(err) {
+              currentBuild.result = 'FAILURE'
+              echo "Failed: ${err}"
+              // Uncomment when debugging failed builds
+              // input message: "Failed, will uninstall. Proceed?"
+            }
+          }
+        }
+      }
+    }
+    stage('Uninstall Vault') {
+      steps {
+        container('docker') {
+          script {
+            // sh "docker run --rm ${VAULT_INSTALLER_DOCKER_ARGS} 868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-gcp-cluster:production deploy vt-${GIT_COMMIT_SHORT}"
+            sh "./deploy_local.sh destroy ${VAULT_NAME}"
           }
         }
       }
