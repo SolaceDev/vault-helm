@@ -44,6 +44,8 @@ pipeline {
     TF_CLI_ARGS_destroy = "-auto-approve"
     VAULT_INSTALLER_BASE_IMAGE_TAG = "868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-installer-base:0.1.0"
     VAULT_INSTALLER_DOCKER_ARGS = "-v /root/.config/gcloud:/root/.config/gcloud:rw -v /root/.vault-token:/root/.vault-token:rw -e TF_CLI_ARGS_apply -e TF_CLI_ARGS -e TF_CLI_ARGS_destroy -e TF_IN_AUTOMATION=true"
+    VAULT_INSTALLER_IMAGE_NAME = "868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-gcp-cluster"
+    VAULT_INSTALLER_IMAGE_TAG = "${VAULT_INSTALLER_IMAGE_NAME}:${GIT_BRANCH}"
     GCP_CREDS = vault path: "gcp/key/maas-vault-gcp-cluster-maas-vault-dev", key: 'private_key_data', engineVersion: '1'
     VAULT_NAME = "vt-${GIT_COMMIT_SHORT}"
   }
@@ -57,6 +59,33 @@ pipeline {
             sh "mkdir -p ~/.config/gcloud"
             sh "echo ${GCP_CREDS} | base64 -d > ~/.config/gcloud/application_default_credentials.json"
             sh "touch ~/.vault-token"
+          }
+        }
+      }
+    }
+    stage('Test Run') {
+      steps {
+        container('docker') {
+          script {
+            try {
+              sh "exit 1"
+            } catch (err) {
+              currentBuild.result = 'FAILURE'
+              echo "Failed: ${err}"
+            }
+          }
+        }
+      }
+    }
+    stage('Test Fail') {
+      when {
+        expression { GIT_BRANCH != 'master' && currentBuild.result == 'FAILURE' }
+      }
+      steps {
+        container('docker') {
+          script {
+            sh "echo helloworld"
+            return
           }
         }
       }
@@ -104,6 +133,20 @@ pipeline {
           script {
             // sh "docker run --rm ${VAULT_INSTALLER_DOCKER_ARGS} 868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-gcp-cluster:production deploy vt-${GIT_COMMIT_SHORT}"
             sh "./deploy_local.sh destroy ${VAULT_NAME}"
+          }
+        }
+      }
+    }
+    stage('Deploy') {
+      when {
+        expression { GIT_BRANCH == 'master' && currentBuild.result != 'FAILURE' }
+      }
+      steps {
+        container('docker') {
+          script {
+            sh "docker push ${VAULT_INSTALLER_IMAGE_TAG}"
+            sh "docker tag ${VAULT_INSTALLER_IMAGE_TAG} ${VAULT_INSTALLER_IMAGE_TAG}-${GIT_COMMIT_SHORT}"
+            sh "docker push ${VAULT_INSTALLER_IMAGE_TAG}-${GIT_COMMIT_SHORT}"
           }
         }
       }

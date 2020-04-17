@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu${DEBUG+x}o pipefail
 
+image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$(id -un)-vault:latest}
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
-image_tag=$(id -un)-vault:latest
 
 if [[ -z ${VAULT_INSTALLER_BASE_IMAGE_TAG:-} ]]; then
   base_image_tag=$(id -un)-vault-base:latest
