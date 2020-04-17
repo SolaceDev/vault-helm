@@ -38,7 +38,7 @@ pipeline {
         script: "printf \$(git rev-parse --short ${GIT_COMMIT})",
         returnStdout: true
     )
-    BRANCH_TAG = ${GIT_BRANCH}.replaceAll('/', '_')
+    BRANCH_TAG = "${GIT_BRANCH}.replaceAll('/', '_')"
     TF_CLI_ARGS = "-no-color"
     TF_CLI_ARGS_apply = "-auto-approve"
     TF_CLI_ARGS_destroy = "-auto-approve"
