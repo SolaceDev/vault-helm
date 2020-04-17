@@ -157,9 +157,7 @@ function command_vaultinit {
   done
 
   vault_init_root_token=$(vault operator init -format=yaml | grep root_token | sed 's/.*: //')
-  echo "vault login ${vault_init_root_token}"
-
-  for i in 1 2 3 4 5; do vault login ${vault_init_root_token} && break || sleep 1; done
+  for i in 1 2 3 4 5; do vault login ${vault_init_root_token} && break || sleep 2; done
 }
 
 function command_vault {
