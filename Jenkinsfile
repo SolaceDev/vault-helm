@@ -38,14 +38,14 @@ pipeline {
         script: "printf \$(git rev-parse --short ${GIT_COMMIT})",
         returnStdout: true
     )
-    IMAGE_TAG = "${GIT_BRANCH}-${GIT_COMMIT_SHORT}"
+    BRANCH_TAG = ${GIT_BRANCH}.replaceAll('/', '_')
     TF_CLI_ARGS = "-no-color"
     TF_CLI_ARGS_apply = "-auto-approve"
     TF_CLI_ARGS_destroy = "-auto-approve"
     VAULT_INSTALLER_BASE_IMAGE_TAG = "868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-installer-base:0.1.0"
     VAULT_INSTALLER_DOCKER_ARGS = "-v /root/.config/gcloud:/root/.config/gcloud:rw -v /root/.vault-token:/root/.vault-token:rw -e TF_CLI_ARGS_apply -e TF_CLI_ARGS -e TF_CLI_ARGS_destroy -e TF_IN_AUTOMATION=true"
     VAULT_INSTALLER_IMAGE_NAME = "868978040651.dkr.ecr.us-east-1.amazonaws.com/maas-vault-gcp-cluster"
-    VAULT_INSTALLER_IMAGE_TAG = "${VAULT_INSTALLER_IMAGE_NAME}:${GIT_BRANCH}"
+    VAULT_INSTALLER_IMAGE_TAG = "${VAULT_INSTALLER_IMAGE_NAME}:${BRANCH_TAG}"
     GCP_CREDS = vault path: "gcp/key/maas-vault-gcp-cluster-maas-vault-dev", key: 'private_key_data', engineVersion: '1'
     VAULT_NAME = "vt-${GIT_COMMIT_SHORT}"
   }
