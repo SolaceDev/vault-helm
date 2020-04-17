@@ -63,33 +63,6 @@ pipeline {
         }
       }
     }
-    stage('Test Run') {
-      steps {
-        container('docker') {
-          script {
-            try {
-              sh "exit 1"
-            } catch (err) {
-              currentBuild.result = 'FAILURE'
-              echo "Failed: ${err}"
-            }
-          }
-        }
-      }
-    }
-    stage('Test Fail') {
-      when {
-        expression { GIT_BRANCH != 'master' && currentBuild.result == 'FAILURE' }
-      }
-      steps {
-        container('docker') {
-          script {
-            sh "echo helloworld"
-            return
-          }
-        }
-      }
-    }
     stage('Validate templates') {
       steps {
         container('docker') {
