@@ -135,6 +135,9 @@ function command_deploy {
     # Add the jetstack/cert-manager repo
     helm repo add jetstack https://charts.jetstack.io
 
+    # Add the helm kubernetes repo
+    helm repo add stable https://kubernetes-charts.storage.googleapis.com
+
     # Make sure Helm repos are up to date.
     helm repo update
 
@@ -191,6 +194,14 @@ spec:
             --set maas.kmsKeyRing=$HELM_project_id \
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
+
+    # after everything is up and running we will deploy datadog
+    #helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $namespace --version 2.3.6
+    echo "READ IN THE DD_API_KEY INFO:"
+    vault read -field=DD_API_KEY secret/data/development/datadog | base64 -D
+    echo "READ IN THE DD_API_KEY INFO:"
+    vault read -field=DD_APP_KEY secret/data/development/datadog | base64 -D
+    echo "END OF DD KEYS"
 }
 
 #
