@@ -198,9 +198,9 @@ spec:
     # after everything is up and running we will deploy datadog
     #helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $namespace --version 2.3.6
     echo "READ IN THE DD_API_KEY INFO:"
-    vault read -field=DD_API_KEY secret/data/development/datadog | base64 -D
+    vault read -field=DD_API_KEY secret/data/development/datadog
     echo "READ IN THE DD_API_KEY INFO:"
-    vault read -field=DD_APP_KEY secret/data/development/datadog | base64 -D
+    vault read -field=DD_APP_KEY secret/data/development/datadog
     echo "END OF DD KEYS"
 }
 
