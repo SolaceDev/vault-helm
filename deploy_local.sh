@@ -5,26 +5,24 @@ set -eu${DEBUG+x}o pipefail
 PROJECT_ID=maas-vault-dev
 REGION=us-east-1
 
-for i in "$@"
-do
-  case $i in
-    -cluster_id=*|--cluster_id=*)
-    PROJECT_ID="${i#*=}"
+while [ "$1" != "" ]; do
+    PARAM=`echo $1 | awk -F= '{print $1}'`
+    VALUE=`echo $1 | awk -F= '{print $2}'`
+    case $PARAM in
+        -cluster_id=*|--cluster_id=*)
+            CLUSTER_ID=$VALUE
+            ;;
+        -project_id=*|--project_id=*)
+            PROJECT_ID=$VALUE
+            ;;
+        -region=*|--region=*)
+            REGION=$VALUE
+            ;;
+        -datadog_api_key=*|--datadog_api_key=*)
+            DD_API_KEY=$VALUE
+            ;;
+    esac
     shift
-    ;;
-    -project_id=*|--project_id=*)
-    PROJECT_ID="${i#*=}"
-    shift
-    ;;
-    -region=*|--region=*)
-    REGION="${i#*=}"
-    shift
-    ;;
-    -datadog_api_key=*|--datadog_api_key=*)
-    DD_API_KEY="${i#*=}"
-    shift
-    ;;
-  esac
 done
 
 echo "CLUSTER_ID: $CLUSTER_ID"
