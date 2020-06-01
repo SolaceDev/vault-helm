@@ -11,6 +11,16 @@ fi
 command_name=$1
 shift
 
+for i in "$@"
+do
+  case $i in
+    -datadog_api_key=*|--datadog_api_key=*)
+    DD_API_KEY="${i#*=}"
+    shift
+    ;;
+  esac
+done
+
 while [[ -z ${HELM_cluster_id:-} ]]; do
     echo "No Vault Cluster ID specified."
     read -p "Specify the Vault cluster ID: " HELM_cluster_id
@@ -196,12 +206,7 @@ spec:
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
     # after everything is up and running we will deploy datadog
-    #helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $namespace --version 2.3.6
-    echo "READ IN THE DD_API_KEY INFO:"
-    vault read -field=DD_API_KEY secret/data/development/datadog --address=http://vault.k8s.mymaas.net
-    echo "READ IN THE DD_API_KEY INFO:"
-    vault read -field=DD_APP_KEY secret/data/development/datadog --address=http://vault.k8s.mymaas.net
-    echo "END OF DD KEYS"
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $namespace --version 2.3.6
 }
 
 #
