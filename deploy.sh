@@ -10,7 +10,10 @@ fi
 # variable.
 command_name=$1
 
-echo "datadog_api_key: $DD_API_KEY"
+echo "CLUSTER_ID: $CLUSTER_ID"
+echo "PROJECT_ID: $PROJECT_ID"
+echo "REGION: $REGION"
+echo "DD_API_KEY: $DD_API_KEY"
 
 # Make sure a recognized command was provided.
 case $command_name in
@@ -90,18 +93,20 @@ function command_help {
 #   This function handles running the script actions for the destroy command.
 #
 function command_destroy {
-    if (( $# == 0 )); then
-        echo "ERROR: The cluster_id argument is missing."
+    if [ -z "CLUSTER_ID" ]; then
+        echo "ERROR: The --cluster_id= argument is missing."
+
+        exit 1
+    fi
+    if [ -z "PROJECT_ID" ]; then
+        echo "ERROR: The --project_id= argument is missing."
 
         exit 1
     fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
     export HELM_cluster_id=$CLUSTER_ID
-
-    if (( $# == 2 )); then
-        export TF_VAR_project_id=$PROJECT_ID
-    fi
+    export TF_VAR_project_id=$PROJECT_ID
 
     ./helm/helm.sh destroy
 
@@ -113,21 +118,25 @@ function command_destroy {
 #   This function handles running the script actions for the deploy command.
 #
 function command_deploy {
-    if (( $# == 0 )); then
-        echo "ERROR: The cluster_id argument is missing."
+    if [ -z "CLUSTER_ID" ]; then
+        echo "ERROR: The --cluster_id= argument is missing."
+
+        exit 1
+    fi
+    if [ -z "PROJECT_ID" ]; then
+        echo "ERROR: The --project_id= argument is missing."
+
+        exit 1
+    fi
+    if [ -z "REGION" ]; then
+        echo "ERROR: The --region= argument is missing."
 
         exit 1
     fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
-
-    if (( $# == 2 )); then
-        export TF_VAR_project_id=$PROJECT_ID
-
-        if (( $# == 3 )); then
-            export TF_VAR_region=$REGION
-        fi
-    fi
+    export TF_VAR_project_id=$PROJECT_ID
+    export TF_VAR_region=$REGION
 
     ./terraform/terraform.sh apply
 

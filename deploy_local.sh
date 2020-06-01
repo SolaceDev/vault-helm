@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu${DEBUG+x}o pipefail
 
+# Set the default project id and region but allow them to be overridden via args
+PROJECT_ID=maas-vault-dev
+REGION=us-east-1
+
 for i in "$@"
 do
   case $i in
@@ -23,10 +27,10 @@ do
   esac
 done
 
-# build the environment variables file
-echo "PROJECT_ID=$PROJECT_ID" >> ./env.vars
-echo "REGION=$REGION" >> ./env.vars
-echo "DD_API_KEY=$DD_API_KEY" >> ./env.vars
+echo "CLUSTER_ID: $CLUSTER_ID"
+echo "PROJECT_ID: $PROJECT_ID"
+echo "REGION: $REGION"
+echo "DD_API_KEY: $DD_API_KEY"
 
 image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$(id -un)-vault:latest}
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
