@@ -5,24 +5,26 @@ set -eu${DEBUG+x}o pipefail
 PROJECT_ID=maas-vault-dev
 REGION=us-east-1
 
-while [ "$1" != "" ]; do
-    PARAM=`echo $1 | awk -F= '{print $1}'`
-    VALUE=`echo $1 | awk -F= '{print $2}'`
-    case $PARAM in
-        -cluster_id=*|--cluster_id=*)
-            CLUSTER_ID=$VALUE
-            ;;
-        -project_id=*|--project_id=*)
-            PROJECT_ID=$VALUE
-            ;;
-        -region=*|--region=*)
-            REGION=$VALUE
-            ;;
-        -datadog_api_key=*|--datadog_api_key=*)
-            DD_API_KEY=$VALUE
-            ;;
-    esac
+for i in "$@"
+do
+  case $i in
+    -cluster_id=*|--cluster_id=*)
+    CLUSTER_ID="${i#*=}"
     shift
+    ;;
+    -project_id=*|--project_id=*)
+    PROJECT_ID="${i#*=}"
+    shift
+    ;;
+    -region=*|--region=*)
+    REGION="${i#*=}"
+    shift
+    ;;
+    -datadog_api_key=*|--datadog_api_key=*)
+    DD_API_KEY="${i#*=}"
+    shift
+    ;;
+  esac
 done
 
 echo "CLUSTER_ID: $CLUSTER_ID"
@@ -44,5 +46,5 @@ docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
 echo "here's what we're running: "
-echo "docker run --rm ${docker_args} ${image_tag} $@"
+echo "docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}"
 docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}
