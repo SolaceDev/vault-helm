@@ -1,6 +1,33 @@
 #!/bin/sh
 set -eu${DEBUG+x}o pipefail
 
+for i in "$@"
+do
+  case $i in
+    -cluster_id=*|--cluster_id=*)
+    PROJECT_ID="${i#*=}"
+    shift
+    ;;
+    -project_id=*|--project_id=*)
+    PROJECT_ID="${i#*=}"
+    shift
+    ;;
+    -region=*|--region=*)
+    REGION="${i#*=}"
+    shift
+    ;;
+    -datadog_api_key=*|--datadog_api_key=*)
+    DD_API_KEY="${i#*=}"
+    shift
+    ;;
+  esac
+done
+
+# build the environment variables file
+echo "PROJECT_ID=$PROJECT_ID" >> ./env.vars
+echo "REGION=$REGION" >> ./env.vars
+echo "DD_API_KEY=$DD_API_KEY" >> ./env.vars
+
 image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$(id -un)-vault:latest}
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
 
@@ -14,4 +41,6 @@ fi
 docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
-docker run --rm ${docker_args} ${image_tag} $@
+echo "here's what we're running: "
+echo "docker run --rm ${docker_args} ${image_tag} $@"
+docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}

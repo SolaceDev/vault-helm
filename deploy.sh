@@ -9,25 +9,8 @@ fi
 # Take the first command line argument as the value for the command_name
 # variable.
 command_name=$1
-shift
 
-for i in "$@"
-do
-  case $i in
-    -project_id=*|--project_id=*)
-    PROJECT_ID="${i#*=}"
-    shift
-    ;;
-    -region=*|--region=*)
-    REGION="${i#*=}"
-    shift
-    ;;
-    -datadog_api_key=*|--datadog_api_key=*)
-    DD_API_KEY="${i#*=}"
-    shift
-    ;;
-  esac
-done
+echo "datadog_api_key: $DD_API_KEY"
 
 # Make sure a recognized command was provided.
 case $command_name in
@@ -58,7 +41,7 @@ function command_help {
     echo "                     descriptions below for details of the required arguments."
     echo ""
     echo "Commands:"
-    echo "  deploy cluster_id [ --project_id= [ --region= ] ] --datadog-api-key="
+    echo "  deploy --cluster_id= [ --project_id= [ --region= ] ] --datadog-api-key="
     echo "      The deploy command provisions (or updates) the necessary infrastructure"
     echo "      for a Vault cluster, then installs (or upgrades) the Helm chart for"
     echo "      cert-manager and Vault.  The deploy command provides the glue between all"
@@ -74,10 +57,10 @@ function command_help {
     echo "      The datadog-api-key is optional.  If it is omitted, the default value"
     echo "      will be pulled from vault.maas-vault-prod.mymaas.net:8200"
     echo ""
-    echo "      example:  ./deploy.sh deploy maas-dev --project_id=maas-gcp --region=us-west-1 \\"
+    echo "      example:  ./deploy.sh deploy --cluster-id=maas-dev --project_id=maas-gcp --region=us-west-1 \\"
     echo "                --datadog-api-key=8b27de30429e989c22390a8802"
     echo ""
-    echo "  destroy cluster_id [ project_id= ]"
+    echo "  destroy --cluster_id= [ --project_id= ]"
     echo "      The destroy command unprovisions all of the infrastructure used by a Vault"
     echo "      cluster."
     echo ""
@@ -87,13 +70,13 @@ function command_help {
     echo "      maas-vault-dev is used, which corresponds to the Vault development GCP"
     echo "      project."
     echo ""
-    echo "      example:  ./deploy.sh destroy maas-dev --project-id=maas-gcp"
+    echo "      example:  ./deploy.sh destroy --cluster-id=maas-dev --project-id=maas-gcp"
     echo ""
-    echo "  validate cluster_id [ project_id= ]"
+    echo "  validate --cluster_id= [ project_id= ]"
     echo "      Validate the Terraform configuration and lint the Helm charts"
     echo "      cluster."
     echo ""
-    echo "      example: ./deploy.sh validate maas-dev --project-id=maas-gcp"
+    echo "      example: ./deploy.sh validate --cluster-id=maas-dev --project-id=maas-gcp"
     echo ""
     echo "  help"
     echo "      The help command prints this message and exits."
@@ -113,8 +96,8 @@ function command_destroy {
         exit 1
     fi
 
-    export TF_VAR_cluster_id=$1
-    export HELM_cluster_id=$1
+    export TF_VAR_cluster_id=$CLUSTER_ID
+    export HELM_cluster_id=$CLUSTER_ID
 
     if (( $# == 2 )); then
         export TF_VAR_project_id=$PROJECT_ID
@@ -136,7 +119,7 @@ function command_deploy {
         exit 1
     fi
 
-    export TF_VAR_cluster_id=$1
+    export TF_VAR_cluster_id=$CLUSTER_ID
 
     if (( $# == 2 )); then
         export TF_VAR_project_id=$PROJECT_ID
@@ -148,7 +131,7 @@ function command_deploy {
 
     ./terraform/terraform.sh apply
 
-    export HELM_cluster_id=$1
+    export HELM_cluster_id=$CLUSTER_ID
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
@@ -156,15 +139,15 @@ function command_deploy {
 }
 
 function command_validate {
-  export TF_VAR_cluster_id=$1
-  export HELM_cluster_id=$1
+  export TF_VAR_cluster_id=$CLUSTER_ID
+  export HELM_cluster_id=$CLUSTER_ID
 
   ./terraform/terraform.sh validate
   ./helm/helm.sh lint
 }
 
 function command_vaultinit {
-  export HELM_cluster_id=$1
+  export HELM_cluster_id=$CLUSTER_ID
   DEBUG=1
 
   retries=0
@@ -188,7 +171,7 @@ function command_vaultinit {
 }
 
 function command_vault {
-  export HELM_cluster_id=$1
+  export HELM_cluster_id=$CLUSTER_ID
   shift
 
   export VAULT_ADDR="https://${HELM_cluster_id}.${HELM_project_id:-"maas-vault-dev"}.mymaas.net:8200"
