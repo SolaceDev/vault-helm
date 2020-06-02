@@ -26,6 +26,29 @@ The *destroy* operation simply runs a **Terraform** *destroy* command.  Since
 the Helm releases don't need to be uninstalled when the entire GKE cluster is
 deleted.
 
+## Pre-install setup
+This repository has sub-modules enabled for cert-manager and vault-helm.  When
+cloning this erpo please ensure you use the recursive option:
+`git clone --recursive https://github.com/SolaceDev/maas-vault-gcp-cluster.git`
+
+You will need to set up a new github personal access token.  Refer to github
+documentation to perform this action.  We will require `read:org, repo` permissions.
+(SAVE YOUR TOKEN!)
+
+Access to the GCP project maas-vault-dev is required (email invite).
+
+Log into gcloud:  `gcloud auth application-default login`
+(this will open a browser window on Mac)
+
+Export the vault env var:  `export VAULT_ADDR=http://vault.k8s.mymaas.net`
+
+Log into vault using previously-created access token: `vault login -method=github token=${GITHUB_TOKEN}`
+
+Finally, build the GCP credentials file:
+`vault read -field=private_key_data gcp/key/maas-vault-gcp-cluster-maas-vault-dev | base64 -D > ~/.config/gcloud/application_default_credentials.json`
+
+You should now be able to run gcloud and vault commands.
+
 ### Reference Environments
 This project is designed to easily deploy ephemeral instances for development
 (of Vault features) activities.  However, there are some well-known

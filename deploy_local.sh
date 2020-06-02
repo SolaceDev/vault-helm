@@ -3,13 +3,13 @@ set -e${DEBUG+x}o pipefail
 
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID=maas-vault-dev
-REGION=us-east-1
+REGION=us-east1
 
 for i in "$@"
 do
   case $i in
     -command_name=*|--command_name=*)
-    CLUSTER_ID="${i#*=}"
+    command_name="${i#*=}"
     shift
     ;;
     -cluster_id=*|--cluster_id=*)
@@ -46,6 +46,17 @@ if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$co
       exit 1
 fi
 
+# Make sure a recognized command was provided.
+case $command_name in
+  deploy|destroy|validate|help|vault|vaultinit)
+    ;;
+  *)
+    echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
+
+    exit 1
+    ;;
+esac
+
 if [ -z "$DD_API_KEY" ]; then
   echo "The datadog api key was not provided."
   echo "We will be using the default DD API KEY."
@@ -70,9 +81,10 @@ else
   base_image_tag="${VAULT_INSTALLER_BASE_IMAGE_TAG}"
 fi
 
+echo "building docker container from Dockerfile"
 docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
 echo "here's what we're running: "
 echo "docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}"
-docker run --rm ${docker_args} -e command_name=$command_name CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}
+docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag} $@
