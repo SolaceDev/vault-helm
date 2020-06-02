@@ -1,28 +1,32 @@
 #!/bin/bash
-set -eu${DEBUG+x}o pipefail
-
-if (( $# == 0 )); then	
-    set -- help	
-fi
+set -e${DEBUG+x}o pipefail
 
 # All parameters are now passed and environment variables to docker run command in deploy_local.sh
 # Check to make sure that all the required variables have been passed:
 
-echo "********************************"
-echo "***** params passed to env *****"
-echo "command name: $command_name"
-echo "CLUSTER_ID: $CLUSTER_ID"
-echo "PROJECT_ID: $PROJECT_ID"
-echo "REGION: $REGION"
-echo "DD_API_KEY: $DD_API_KEY"
-echo "********************************"
+if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ]
+  then
+      echo "deploy.sh error:"
+      echo ""
+      echo "command_name, CLUSTER_ID, PROJECT_ID and REGION are required arguments."
+      echo "Please re-run the command with the proper arguments set:"
+      echo ""
+      echo "command name: $command_name"
+      echo "CLUSTER_ID: $CLUSTER_ID"
+      echo "PROJECT_ID: $PROJECT_ID"
+      echo "REGION: $REGION"
+      echo ""
+      
+      exit 1
+fi
 
 # Make sure a recognized command was provided.
 case $command_name in
   deploy|destroy|validate|help|vault|vaultinit)
     ;;
   *)
-    echo "ERROR: Unrecognized deploy.sh command: $command_name"
+    echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
+    echo ""
     echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
     echo ""
 

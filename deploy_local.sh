@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu${DEBUG+x}o pipefail
+set -e${DEBUG+x}o pipefail
 
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID=maas-vault-dev
@@ -38,11 +38,13 @@ if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$co
       echo "command_name, CLUSTER_ID, PROJECT_ID and REGION are required arguments."
       echo "Please re-run the command with the proper arguments set:"
       echo ""
-      echo "./deploy_local.sh --command-name=deploy --cluster_id=vault-dev --project_id=maas-vault-dev --region=us-east-1"
+      echo "command name: $command_name"
+      echo "CLUSTER_ID: $CLUSTER_ID"
+      echo "PROJECT_ID: $PROJECT_ID"
+      echo "REGION: $REGION"
       echo ""
-      echo "(project_id and region are set by default, so you only really need command_name and cluster_id)"
+      echo "PROJECT_ID and REGION are automatically set if not provided."
       echo ""
-      
       exit 1
 fi
 
@@ -52,9 +54,9 @@ case $command_name in
     ;;
   *)
     echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
+    echo ""
     echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
     echo ""
-
     exit 1
     ;;
 esac

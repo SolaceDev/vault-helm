@@ -32,7 +32,6 @@ done
 
 if [ -z "$HELM_cluster_id" ] || [ -z "$HELM_project_id" ] || [ -z "$HELM_region" ] || [ -z "$command_name" ]
 then
-    set -- help
     echo "helm.sh error:"
     echo ""
     echo "command_name, HELM_cluster_id, HELM_project_id and HELM_region are required arguments."
