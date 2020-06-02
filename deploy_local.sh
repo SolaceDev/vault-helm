@@ -2,8 +2,8 @@
 set -e${DEBUG+x}o pipefail
 
 # Set the default project id and region but allow them to be overridden via args
-PROJECT_ID=maas-vault-dev
-REGION=us-east1
+PROJECT_ID="maas-vault-dev"
+REGION="us-east1"
 
 for i in "$@"
 do
@@ -32,20 +32,36 @@ do
 done
 
 if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ]
-  then
-      echo "deploy_local.sh error:"
-      echo ""
-      echo "command_name, CLUSTER_ID, PROJECT_ID and REGION are required arguments."
-      echo "Please re-run the command with the proper arguments set:"
-      echo ""
-      echo "command name: $command_name"
-      echo "CLUSTER_ID: $CLUSTER_ID"
-      echo "PROJECT_ID: $PROJECT_ID"
-      echo "REGION: $REGION"
-      echo ""
-      echo "PROJECT_ID and REGION are automatically set if not provided."
-      echo ""
-      exit 1
+then
+    echo "deploy_local.sh error:"
+    echo ""
+    echo "command name: $command_name"
+    echo "CLUSTER_ID: $CLUSTER_ID"
+    echo "PROJECT_ID: $PROJECT_ID"
+    echo "REGION: $REGION"
+    echo ""
+    echo "This command needs to be run with parameters now."
+    echo ""
+    echo "*************************************************"
+    echo "to deploy:"
+    echo "*************************************************"
+    echo ""
+    echo "In the deploy scenario, cluster_id and datadog_api_key are required parameters."
+    echo "project_id and region are set as defaults."
+    echo ""
+    echo "./deploy_local.sh --command_name=deploy --cluster_id=vault-dev --project_id=maas-vault-dev --region=us-east1 --datadog_api_key=XXXXXXXXXXXXXXXXXXXXXXXX"
+    echo ""
+    echo "*************************************************"
+    echo "to destroy:"
+    echo "*************************************************"
+    echo ""
+    echo "In the destroy scenario, cluster_id is required."
+    echo "project_id and region are set as defaults"
+    echo ""
+    echo "./deploy_local.sh --command_name=destroy --cluster_id=vault-dev"
+    echo ""
+    echo ""
+    exit 1
 fi
 
 # Make sure a recognized command was provided.
@@ -61,9 +77,8 @@ case $command_name in
     ;;
 esac
 
-if [ -z "$DD_API_KEY" ]; then
+if [ "$command_name" == "deploy" ] && [ -z "$DD_API_KEY" ]; then
   echo "The datadog api key was not provided."
-  echo "We will be using the default DD API KEY."
   echo "default dd api key unset, quitting"
   exit 1
   
@@ -90,5 +105,5 @@ docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
 echo "here's what we're running: "
-echo "docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}"
-docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag} $@
+echo "docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}"
+docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}

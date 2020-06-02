@@ -1,23 +1,8 @@
 #!/bin/bash
 set -e${DEBUG+x}o pipefail
 
-# All parameters are now passed and environment variables to docker run command in deploy_local.sh
-# Check to make sure that all the required variables have been passed:
-
-if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ]
-  then
-      echo "deploy.sh error:"
-      echo ""
-      echo "command_name, CLUSTER_ID, PROJECT_ID and REGION are required arguments."
-      echo "Please re-run the command with the proper arguments set:"
-      echo ""
-      echo "command name: $command_name"
-      echo "CLUSTER_ID: $CLUSTER_ID"
-      echo "PROJECT_ID: $PROJECT_ID"
-      echo "REGION: $REGION"
-      echo ""
-      
-      exit 1
+if [[ $# == 0 ]]; then
+    set -- help
 fi
 
 # Make sure a recognized command was provided.
@@ -29,26 +14,9 @@ case $command_name in
     echo ""
     echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
     echo ""
-
     exit 1
     ;;
 esac
-
-
-# Verfiy that we have the correct parameters to run the command
-# This logic was moved from each function to a common place
-
-if [ "$command_name" == "deploy" ] || "$command_name" == "destroy" ]
-then
-  if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ]
-    then
-
-        echo "CLUSTER_ID, PROJECT_ID and REGION are required arguments."
-        echo "Please re-run the command with the proper arguments set."
-        echo ""
-        exit 1
-    fi
-fi
 
 #
 # command_help:
@@ -118,13 +86,31 @@ function command_help {
 #
 function command_destroy {
 
-    export TF_VAR_cluster_id=$CLUSTER_ID
-    export HELM_cluster_id=$CLUSTER_ID
-    export TF_VAR_project_id=$PROJECT_ID
+  if [ -z "$CLUSTER_ID" ]; then
+    echo "deploy.sh error:"
+    echo "cluster_id was not provided."
+    echo "Please run your command again:"
+    echo ""
+    echo "./deploy_local.sh --command_name=destroy --cluster-id=mycluster"
+    exit 1
+  fi
+  if [ -z "$REGION" ]; then
+    echo "Region was not provided; using the default of us-east1"
+    REGION="us-east1"
+  fi
+  if [ -z "$PROJECT_ID" ]; then
+    echo "project_id was not provided; using the default of maas-vault-dev"
+    PROJECT_ID="maas-vault-dev"
+  fi
 
-    ./helm/helm.sh --command-name=destroy --HELM_cluster_id=$CLUSTER_ID --HELM_region=$REGION --HELM_project_id=$PROJECT_ID
+  
+  export TF_VAR_cluster_id=$CLUSTER_ID
+  export HELM_cluster_id=$CLUSTER_ID
+  export TF_VAR_project_id=$PROJECT_ID
 
-    ./terraform/terraform.sh destroy
+  ./helm/helm.sh --command_name=destroy --HELM_cluster_id=$CLUSTER_ID --HELM_region=$REGION --HELM_project_id=$PROJECT_ID
+
+  ./terraform/terraform.sh destroy
 }
 
 #
@@ -132,6 +118,24 @@ function command_destroy {
 #   This function handles running the script actions for the deploy command.
 #
 function command_deploy {
+
+# All parameters are now passed and environment variables to docker run command in deploy_local.sh
+# Check to make sure that all the required variables have been passed:
+
+if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ] || [ -z "$DD_API_KEY" ]
+  then
+      echo "deploy.sh error:"
+      echo ""
+      echo "command_name, CLUSTER_ID, PROJECT_ID, REGION and DD_API_KEY are required arguments."
+      echo "Please re-run the command with the proper arguments set:"
+      echo ""
+      echo "command name: $command_name"
+      echo "CLUSTER_ID: $CLUSTER_ID"
+      echo "PROJECT_ID: $PROJECT_ID"
+      echo "REGION: $REGION"
+      echo ""
+      exit 1
+fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
     export TF_VAR_project_id=$PROJECT_ID
