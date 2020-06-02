@@ -4,6 +4,10 @@ set -e${DEBUG+x}o pipefail
 # Make sure to switch the current directory to the one where this script is located.
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
+if [[ $# == 0 ]]; then
+    set -- help
+fi
+
 for i in "$@"
 do
   case $i in
@@ -86,8 +90,9 @@ function command_help {
     echo ""
     echo "Environment Variables:"
     echo "  This script requires the following environment variables to be set."
+    echo ""
     echo "  You can also pass them into helm.sh as a parameter with: "
-    echo "  --HELM_cluster_id=vault-dev --HELM_project_id=vault0 --HELM_region=us-east-1"
+    echo "  --HELM_cluster_id=vault-dev --HELM_project_id=maas-vault-dev --HELM_region=us-east-1"
     echo ""
     echo "  HELM_cluster_id     The unique name of the Vault cluster.  This value is used as"
     echo "                      the Kubernetes namespace name.  This variable is needed for the"
@@ -221,12 +226,8 @@ spec:
 
     echo "deploying datadog..."
 
-    # need to set the namespace because helm v3 thinks it's smart
-    # be aware that we'll need to switch back if we do anything else
-    kubectl config set-context $HELM_cluster_id
-
-    # after everything is up and running we will deploy datadog via helm v3 (this will not work in helm v2)
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6
+    # after everything is up and running we will deploy datadog via helm v3
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6 --generate-name
 }
 
 #
@@ -235,6 +236,9 @@ spec:
 #
 function command_destroy {
     gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
+
+    # Remove datadog from the cluster
+    helm uninstall "datadog" || true
 
     # Remove the Vault Helm release
     helm uninstall "vault" --namespace $HELM_cluster_id || true
