@@ -1,13 +1,8 @@
 #!/bin/bash
 set -e${DEBUG+x}o pipefail
-shopt -s nullglob
 
 # Make sure to switch the current directory to the one where this script is located.
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-
-if [[ $# == 0 ]]; then
-    set -- help
-fi
 
 for i in "$@"
 do
@@ -35,14 +30,22 @@ do
   esac
 done
 
-echo "********************************"
-echo "***** params passed to env *****"
-echo "command name: $command_name"
-echo "CLUSTER_ID: $HELM_cluster_id"
-echo "PROJECT_ID: $HELM_project_id"
-echo "REGION: $HELM_region"
-echo "DD_API_KEY: $DD_API_KEY"
-echo "********************************"
+if [ -z "$HELM_cluster_id" ] || [ -z "$HELM_project_id" ] || [ -z "$HELM_region" ] || [ -z "$command_name" ]
+then
+    set -- help
+    echo "helm.sh error:"
+    echo ""
+    echo "command_name, HELM_cluster_id, HELM_project_id and HELM_region are required arguments."
+    echo "One or more of those values not found:"
+    echo ""
+    echo "command name: $command_name"
+    echo "CLUSTER_ID: $HELM_cluster_id"
+    echo "PROJECT_ID: $HELM_project_id"
+    echo "REGION: $HELM_region"
+    echo ""
+      
+    exit 1
+fi
 
 if [ "$command_name" == "deploy" ] || "$command_name" == "destroy" ]
 then
@@ -230,8 +233,12 @@ spec:
 
     echo "deploying datadog..."
 
-    # after everything is up and running we will deploy datadog
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --namespace $HELM_cluster_id --version 2.3.6
+    # need to set the namespace because helm v3 thinks it's smart
+    # be aware that we'll need to switch back if we do anything else
+    kubectl config set-context $HELM_cluster_id
+
+    # after everything is up and running we will deploy datadog via helm v3 (this will not work in helm v2)
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6
 }
 
 #
