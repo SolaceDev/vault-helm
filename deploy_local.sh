@@ -52,6 +52,8 @@ case $command_name in
     ;;
   *)
     echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
+    echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
+    echo ""
 
     exit 1
     ;;
