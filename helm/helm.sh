@@ -8,12 +8,25 @@ if [[ $# == 0 ]]; then
     set -- help
 fi
 
-command_name=$1
-shift
-
 for i in "$@"
 do
   case $i in
+    -command_name=*|--command-name=*)
+    command_name="${i#*=}"
+    shift
+    ;;
+    -HELM_cluster_id=*|--HELM_cluster_id=*)
+    HELM_cluster_id="${i#*=}"
+    shift
+    ;;
+    -HELM_region=*|--HELM_region=*)
+    HELM_region="${i#*=}"
+    shift
+    ;;
+    -HELM_project_id=*|--HELM_project_id=*)
+    HELM_project_id="${i#*=}"
+    shift
+    ;;
     -datadog_api_key=*|--datadog_api_key=*)
     DD_API_KEY="${i#*=}"
     shift
@@ -21,10 +34,14 @@ do
   esac
 done
 
-while [[ -z ${HELM_cluster_id:-} ]]; do
-    echo "No Vault Cluster ID specified."
-    read -p "Specify the Vault cluster ID: " HELM_cluster_id
-done
+if [ "$command_name" == "deploy" ] || "$command_name" == "destroy" ]
+then
+    if [ -z "$HELM_cluster_id" ] || [ -z "$HELM_region" ] || [ -z "$HELM_project_id" ]
+    then
+        echo "HELM_cluster_id, HELM_region and HELM_project_id are required for this command."
+        echo "Please re-run the command with the proper arguments set."
+    fi
+fi
 
 export HELM_cluster_id
 
@@ -42,33 +59,37 @@ function command_help {
     echo "in a Vault cluster."
     echo ""
     echo "Usage:"
-    echo "  ./helm.sh [ COMMAND ]"
+    echo "  ./helm.sh --command-name="
     echo ""
     echo "Where:"
-    echo "  COMMAND            Is a command to execute.  Currently, the only recognized"
-    echo "                     commands are: deploy, destroy, and help.  See below for"
+    echo "  --command-name=    Is a command to execute.  Currently, the only recognized"
+    echo "                     commands are: deploy, destroy, help and lint.  See below for"
     echo "                     details on each of these commands."
     echo ""
     echo "Commands:"
-    echo "  deploy"
+    echo "  --command-name=deploy"
     echo "      The deploy command installs the necessary Helm releases and Kubernetes"
     echo "      resources for a Vault cluster."
     echo ""
-    echo "  destroy"
+    echo "  --command-name=destroy"
     echo "      The destroy command unprovisions all of the Kubernetes resources used by a Vault"
     echo "      cluster."
     echo ""
+    echo " --command-name=lint"
+    echo "      This command runs:  helm lint -f maas-values.yaml ./vault-helm"
+    echo ""
     echo "  help"
     echo "      The help command prints this message and exits."
+    echo ""
     echo "Environment Variables:"
-    echo "  This script requires the following environment variables to be set. If they are"
-    echo "  missing, the script will prompt for a value."
+    echo "  This script requires the following environment variables to be set."
+    echo "  You can also pass them into helm.sh as a parameter with: "
+    echo "  --HELM_cluster_id=vault-dev --HELM_project_id=vault0 --HELM_region=us-east-1"
     echo ""
     echo "  HELM_cluster_id     The unique name of the Vault cluster.  This value is used as"
     echo "                      the Kubernetes namespace name.  This variable is needed for the"
     echo "                      deploy and destroy commands."
-    echo "  HELM_project_id     The GCP project ID of the Vault cluster.  This variable is only"
-    echo "                      needed for the deploy command."
+    echo "  HELM_project_id     The GCP project ID of the Vault cluster."
     echo "  HELM_lb_address     The IP address created and reserved for the Vault cluster's"
     echo "                      load balancer.  This variable is only needed for the deploy"
     echo "                      command."
@@ -111,7 +132,7 @@ function get_helm_command_for_release {
 #   Handles the case where this script is invoked with the deploy command.
 #
 function command_deploy {
-    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region:-"us-east1"} --project ${HELM_project_id:-"maas-vault-dev"}
+    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Elevating privilege to avoid permissions errors when creating RBACs.
     if ! kubectl get clusterrolebindings/cluster-admin-binding ; then
@@ -119,17 +140,6 @@ function command_deploy {
                 --clusterrole=cluster-admin \
                 --user=$(gcloud config get-value core/account)
     fi
-
-    # The deploy command needs 2 additional environment variables to be set.
-    while [[ -z $HELM_project_id ]]; do
-        echo "No GCP Project ID specified."
-        read -p "Specify the GCP Project ID: " HELM_project_id
-    done
-
-    while [[ -z $HELM_lb_address ]]; do
-        echo "No Load Balancer Address specified."
-        read -p "Specify the Load Balancer Address: " HELM_lb_address
-    done
 
     export HELM_project_id
     export HELM_lb_address
@@ -206,7 +216,7 @@ spec:
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
     # after everything is up and running we will deploy datadog
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $namespace --version 2.3.6
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $HELM_cluster_id --version 2.3.6
 }
 
 #
@@ -214,7 +224,7 @@ spec:
 #   Handles the case where this script is invoked with the destroy command.
 #
 function command_destroy {
-    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region:-"us-east1"} --project ${HELM_project_id:-"maas-vault-dev"}
+    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Remove the Vault Helm release
     helm uninstall "vault" --namespace $HELM_cluster_id || true

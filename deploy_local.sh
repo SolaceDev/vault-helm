@@ -27,11 +27,6 @@ do
   esac
 done
 
-echo "CLUSTER_ID: $CLUSTER_ID"
-echo "PROJECT_ID: $PROJECT_ID"
-echo "REGION: $REGION"
-echo "DD_API_KEY: $DD_API_KEY"
-
 image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$(id -un)-vault:latest}
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
 
@@ -47,4 +42,4 @@ docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 # rw of gcloud config required for kubectl configuration
 echo "here's what we're running: "
 echo "docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}"
-docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}
+docker run --rm ${docker_args} -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag} $@

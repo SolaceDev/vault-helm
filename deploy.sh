@@ -1,19 +1,17 @@
 #!/bin/bash
 set -eu${DEBUG+x}o pipefail
 
-# If there are no command line arguments, add 'help'
-if (( $# == 0 )); then
-    set -- help
-fi
-
 # Take the first command line argument as the value for the command_name
 # variable.
 command_name=$1
 
+echo "***** params passed to env *****"
+echo "command name: $command_name"
 echo "CLUSTER_ID: $CLUSTER_ID"
 echo "PROJECT_ID: $PROJECT_ID"
 echo "REGION: $REGION"
 echo "DD_API_KEY: $DD_API_KEY"
+echo "********************************"
 
 # Make sure a recognized command was provided.
 case $command_name in
@@ -108,7 +106,7 @@ function command_destroy {
     export HELM_cluster_id=$CLUSTER_ID
     export TF_VAR_project_id=$PROJECT_ID
 
-    ./helm/helm.sh destroy
+    ./helm/helm.sh --command-name=destroy --HELM_cluster_id=$CLUSTER_ID --HELM_region=$REGION --HELM_project_id=$PROJECT_ID
 
     ./terraform/terraform.sh destroy
 }
@@ -118,20 +116,31 @@ function command_destroy {
 #   This function handles running the script actions for the deploy command.
 #
 function command_deploy {
-    if [ -z "CLUSTER_ID" ]; then
+    if [ -z "$CLUSTER_ID" ]; then
         echo "ERROR: The --cluster_id= argument is missing."
 
         exit 1
     fi
-    if [ -z "PROJECT_ID" ]; then
+    if [ -z "$PROJECT_ID" ]; then
         echo "ERROR: The --project_id= argument is missing."
 
         exit 1
     fi
-    if [ -z "REGION" ]; then
+    if [ -z "$REGION" ]; then
         echo "ERROR: The --region= argument is missing."
 
         exit 1
+    fi
+    if [ -z "$DD_API_KEY" ]; then
+        echo "The datadog api key was not provided."
+        echo "We will be using the default DD API KEY."
+
+        # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
+        # export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
+        # gcloud auth login
+        # GITHUB_TOKEN=$(vault read -field=github_token github/dev/github_token | base64 -D)
+        # vault login -method=github token=${GITHUB_TOKEN}
+        # DD_API_KEY=$(vault read -field=datadog_api_key datadog/dev/api_key | base64 -D)
     fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
@@ -144,7 +153,7 @@ function command_deploy {
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    ./helm/helm.sh deploy --datadog_api_key=$DD_API_KEY
+    ./helm/helm.sh --command-name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --datadog_api_key=$DD_API_KEY
 }
 
 function command_validate {
@@ -152,7 +161,7 @@ function command_validate {
   export HELM_cluster_id=$CLUSTER_ID
 
   ./terraform/terraform.sh validate
-  ./helm/helm.sh lint
+  ./helm/helm.sh --command-name=lint
 }
 
 function command_vaultinit {
