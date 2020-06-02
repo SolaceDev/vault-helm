@@ -1,5 +1,6 @@
 #!/bin/bash
-set -eu${DEBUG+x}o pipefail
+set -e${DEBUG+x}o pipefail
+shopt -s nullglob
 
 # Make sure to switch the current directory to the one where this script is located.
 cd "$( dirname "${BASH_SOURCE[0]}" )"
@@ -33,6 +34,15 @@ do
     ;;
   esac
 done
+
+echo "********************************"
+echo "***** params passed to env *****"
+echo "command name: $command_name"
+echo "CLUSTER_ID: $HELM_cluster_id"
+echo "PROJECT_ID: $HELM_project_id"
+echo "REGION: $HELM_region"
+echo "DD_API_KEY: $DD_API_KEY"
+echo "********************************"
 
 if [ "$command_name" == "deploy" ] || "$command_name" == "destroy" ]
 then
@@ -158,6 +168,7 @@ function command_deploy {
     helm repo add jetstack https://charts.jetstack.io
 
     # Add the helm kubernetes repo
+    # Currently required for datago-7454: datadog vault implementation - stable/datadog
     helm repo add stable https://kubernetes-charts.storage.googleapis.com
 
     # Make sure Helm repos are up to date.
@@ -217,8 +228,10 @@ spec:
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
+    echo "deploying datadog..."
+
     # after everything is up and running we will deploy datadog
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") --name datadog --set datadog.apiKey=$DD_API_KEY stable/datadog --namespace $HELM_cluster_id --version 2.3.6
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --namespace $HELM_cluster_id --version 2.3.6
 }
 
 #

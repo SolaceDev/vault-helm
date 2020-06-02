@@ -8,17 +8,7 @@ fi
 # All parameters are now passed and environment variables to docker run command in deploy_local.sh
 # Check to make sure that all the required variables have been passed:
 
-if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$DD_API_KEY" ] || [ -z "$command_name" ]
-  then
-      echo ""
-      echo "deploy.sh error:"
-      echo ""
-      echo "command_name, CLUSTER_ID, PROJECT_ID and REGION are required arguments."
-      echo "Please re-run the command with the proper arguments set."
-      echo ""
-      exit 1
-fi
-
+echo "********************************"
 echo "***** params passed to env *****"
 echo "command name: $command_name"
 echo "CLUSTER_ID: $CLUSTER_ID"
@@ -33,10 +23,28 @@ case $command_name in
     ;;
   *)
     echo "ERROR: Unrecognized deploy.sh command: $command_name"
+    echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
+    echo ""
 
     exit 1
     ;;
 esac
+
+
+# Verfiy that we have the correct parameters to run the command
+# This logic was moved from each function to a common place
+
+if [ "$command_name" == "deploy" ] || "$command_name" == "destroy" ]
+then
+  if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ]
+    then
+
+        echo "CLUSTER_ID, PROJECT_ID and REGION are required arguments."
+        echo "Please re-run the command with the proper arguments set."
+        echo ""
+        exit 1
+    fi
+fi
 
 #
 # command_help:
@@ -105,16 +113,6 @@ function command_help {
 #   This function handles running the script actions for the destroy command.
 #
 function command_destroy {
-    if [ -z "CLUSTER_ID" ]; then
-        echo "ERROR: The --cluster_id= argument is missing."
-
-        exit 1
-    fi
-    if [ -z "PROJECT_ID" ]; then
-        echo "ERROR: The --project_id= argument is missing."
-
-        exit 1
-    fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
     export HELM_cluster_id=$CLUSTER_ID
@@ -130,21 +128,6 @@ function command_destroy {
 #   This function handles running the script actions for the deploy command.
 #
 function command_deploy {
-    if [ -z "$CLUSTER_ID" ]; then
-        echo "ERROR: The --cluster_id= argument is missing."
-
-        exit 1
-    fi
-    if [ -z "$PROJECT_ID" ]; then
-        echo "ERROR: The --project_id= argument is missing."
-
-        exit 1
-    fi
-    if [ -z "$REGION" ]; then
-        echo "ERROR: The --region= argument is missing."
-
-        exit 1
-    fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
     export TF_VAR_project_id=$PROJECT_ID
@@ -156,7 +139,7 @@ function command_deploy {
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    ./helm/helm.sh --command-name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --datadog_api_key=$DD_API_KEY
+    ./helm/helm.sh --command-name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY
 }
 
 function command_validate {
