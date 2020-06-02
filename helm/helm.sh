@@ -227,7 +227,7 @@ spec:
     echo "deploying datadog..."
 
     # after everything is up and running we will deploy datadog via helm v3
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6 --generate-name
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f ./datadog/datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6 --generate-name
 }
 
 #
