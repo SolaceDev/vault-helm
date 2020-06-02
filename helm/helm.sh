@@ -40,6 +40,8 @@ then
     then
         echo "HELM_cluster_id, HELM_region and HELM_project_id are required for this command."
         echo "Please re-run the command with the proper arguments set."
+        echo ""
+        exit 1
     fi
 fi
 

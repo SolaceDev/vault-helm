@@ -1,9 +1,23 @@
 #!/bin/bash
 set -eu${DEBUG+x}o pipefail
 
-# Take the first command line argument as the value for the command_name
-# variable.
-command_name=$1
+if (( $# == 0 )); then	
+    set -- help	
+fi
+
+# All parameters are now passed and environment variables to docker run command in deploy_local.sh
+# Check to make sure that all the required variables have been passed:
+
+if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$DD_API_KEY" ] || [ -z "$command_name" ]
+  then
+      echo ""
+      echo "deploy.sh error:"
+      echo ""
+      echo "command_name, CLUSTER_ID, PROJECT_ID and REGION are required arguments."
+      echo "Please re-run the command with the proper arguments set."
+      echo ""
+      exit 1
+fi
 
 echo "***** params passed to env *****"
 echo "command name: $command_name"
@@ -130,17 +144,6 @@ function command_deploy {
         echo "ERROR: The --region= argument is missing."
 
         exit 1
-    fi
-    if [ -z "$DD_API_KEY" ]; then
-        echo "The datadog api key was not provided."
-        echo "We will be using the default DD API KEY."
-
-        # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
-        # export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
-        # gcloud auth login
-        # GITHUB_TOKEN=$(vault read -field=github_token github/dev/github_token | base64 -D)
-        # vault login -method=github token=${GITHUB_TOKEN}
-        # DD_API_KEY=$(vault read -field=datadog_api_key datadog/dev/api_key | base64 -D)
     fi
 
     export TF_VAR_cluster_id=$CLUSTER_ID
