@@ -226,8 +226,48 @@ spec:
 
     echo "deploying datadog..."
 
-    # after everything is up and running we will deploy datadog via helm v3
+    # deploy datadog via helm v3
     helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f ./datadog/datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6 --generate-name
+
+    # now we need to move template yaml files to modified directory - these are in .gitignore so we don't commit with replaced values accidentally
+    find ./datadog/ -type f -name "*.yaml" -exec cp -n {} ./*.modified \;
+
+    # apply rbac roles
+    kubectl apply -f datadog/modified/rbac-agent.yaml
+    kubectl apply -f datadog/modified/rbac-cluster-agent.yaml
+
+    # create the DD_CLUSTER_AGENT_AUTH_TOKEN
+    DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 | base64)
+    kubectl create secret generic datadog-auth-token --from-literal=token=${DD_CLUSTER_AGENT_AUTH_TOKEN}
+
+    # replace USER_DD_API_KEY in cluster-agent.yaml and agent.yaml
+    sed -i "s/$DD_API_KEY/USER_DD_API_KEY/g" datadog/modified/cluster_agent.yaml   
+
+    # replace DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE with DD_CLUSTER_AGENT_AUTH_TOKEN
+    sed -i "s/$DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE/DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE/g" datadog/modified/cluster_agent.yaml
+
+    echo "********* cluster_agent.yaml ********"
+    cat datadog/modified/cluster_agent.yaml
+    echo "********* cluster_agent.yaml end ********"
+
+    # apply cluster_agent settings
+    kubectl apply -f datadog/modified/datadog-cluster-agent_service.yaml
+    kubectl apply -f datadog/modified/cluster-agent.yaml
+
+    # apply rbac-agent
+    kubectl apply -f datadog/modified/rbac-agent.yaml
+
+    # enable datadog agent
+    sed -i "s/$DD_API_KEY/USER_DD_API_KEY/g" datadog/modified/agent.yaml
+
+    echo "********* agent.yaml ********"
+    cat datadog/modified/agent.yaml
+    echo "********* aagent.yaml end ********"
+    
+    # apply agent
+    kubectl apply -f datadog/modified/agent.yaml
+
+    
 }
 
 #
