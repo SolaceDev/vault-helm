@@ -85,7 +85,7 @@ if [ "$command_name" == "deploy" ] && [ -z "$DD_API_KEY" ]; then
   # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
   # export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
   # gcloud auth login
-  # GITHUB_TOKEN=$(vault read -field=github_token github/dev/github_token | base64 -D)
+  # local GITHUB_TOKEN=$(vault read -field=github_token github/dev/github_token | base64 -D)
   # vault login -method=github token=${GITHUB_TOKEN}
   # DD_API_KEY=$(vault read -field=datadog_api_key datadog/dev/api_key | base64 -D)
 fi
