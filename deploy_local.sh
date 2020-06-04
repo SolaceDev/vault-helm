@@ -28,6 +28,10 @@ do
     DD_API_KEY="${i#*=}"
     shift
     ;;
+    -datadog_app_key=*|--datadog_app_key=*)
+    DD_APP_KEY="${i#*=}"
+    shift
+    ;;
   esac
 done
 
@@ -49,7 +53,7 @@ then
     echo "In the deploy scenario, --cluster_id and --datadog_api_key are required parameters."
     echo "--project_id and --region are set as defaults, but you can override those:"
     echo ""
-    echo "./deploy_local.sh --command_name=deploy --cluster_id=vault-${USER} --project_id=maas-vault-dev --region=us-east1 --datadog_api_key=abcde123456789"
+    echo "./deploy_local.sh --command_name=deploy --cluster_id=vault-${USER} --project_id=maas-vault-dev --region=us-east1 --datadog_api_key=abcde123456789 --datadog_app_key=zxvblkj9876543"
     echo ""
     echo "*************"
     echo "  to destroy:"
@@ -77,9 +81,9 @@ case $command_name in
     ;;
 esac
 
-if [ "$command_name" == "deploy" ] && [ -z "$DD_API_KEY" ]; then
-  echo "The datadog api key was not provided."
-  echo "default dd api key unset, quitting"
+if [ "$command_name" == "deploy" ] && ([ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ]); then
+  echo "The datadog api key or app key was not provided."
+  echo "default dd api/app key unset, quitting"
   exit 1
   
   # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
@@ -89,6 +93,9 @@ if [ "$command_name" == "deploy" ] && [ -z "$DD_API_KEY" ]; then
   # vault login -method=github token=${GITHUB_TOKEN}
   # DD_API_KEY=$(vault read -field=datadog_api_key datadog/dev/api_key | base64 -D)
 fi
+
+# we're using a secure openssl method to generate the auth token for datadog cluster agent (openssl is required to be installed)
+DD_CLUSTER_AGENT_AUTH_TOKEN=$(openssl rand -base64 32 | base64)
 
 image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$(id -un)-vault:latest}
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
@@ -104,6 +111,4 @@ echo "building docker container from Dockerfile"
 docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
-echo "here's what we're running: "
-echo "docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}"
-docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY ${image_tag}
+docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY -e DD_APP_KEY=$DD_APP_KEY -e DD_CLUSTER_AGENT_AUTH_TOKEN=$DD_CLUSTER_AGENT_AUTH_TOKEN ${image_tag}

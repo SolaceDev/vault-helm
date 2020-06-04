@@ -31,6 +31,14 @@ do
     DD_API_KEY="${i#*=}"
     shift
     ;;
+    -datadog_app_key=*|--datadog_app_key=*)
+    DD_APP_KEY="${i#*=}"
+    shift
+    ;;
+    -datadog_cluster_key=*|--datadog_cluster_key=*)
+    DD_CLUSTER_AGENT_AUTH_TOKEN="${i#*=}"
+    shift
+    ;;
   esac
 done
 
@@ -224,49 +232,80 @@ spec:
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
-    echo "deploying datadog..."
-
-    # deploy datadog via helm v3
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog") -f ./datadog/datadog-values.yaml --set datadog.apiKey=$DD_API_KEY stable/datadog --set targetSystem=linux --version 2.3.6 --generate-name
-
-    # now we need to move template yaml files to modified directory - these are in .gitignore so we don't commit with replaced values accidentally
-    find ./datadog/ -type f -name "*.yaml" -exec cp -n {} ./*.modified \;
-
-    # apply rbac roles
-    kubectl apply -f datadog/modified/rbac-agent.yaml
-    kubectl apply -f datadog/modified/rbac-cluster-agent.yaml
-
-    # create the DD_CLUSTER_AGENT_AUTH_TOKEN
-    DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 | base64)
-    kubectl create secret generic datadog-auth-token --from-literal=token=${DD_CLUSTER_AGENT_AUTH_TOKEN}
-
-    # replace USER_DD_API_KEY in cluster-agent.yaml and agent.yaml
-    sed -i "s/$DD_API_KEY/USER_DD_API_KEY/g" datadog/modified/cluster_agent.yaml   
-
-    # replace DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE with DD_CLUSTER_AGENT_AUTH_TOKEN
-    sed -i "s/$DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE/DD_CLUSTER_AGENT_AUTH_TOKEN_VALUE/g" datadog/modified/cluster_agent.yaml
-
-    echo "********* cluster_agent.yaml ********"
-    cat datadog/modified/cluster_agent.yaml
-    echo "********* cluster_agent.yaml end ********"
-
-    # apply cluster_agent settings
-    kubectl apply -f datadog/modified/datadog-cluster-agent_service.yaml
-    kubectl apply -f datadog/modified/cluster-agent.yaml
-
-    # apply rbac-agent
-    kubectl apply -f datadog/modified/rbac-agent.yaml
-
-    # enable datadog agent
-    sed -i "s/$DD_API_KEY/USER_DD_API_KEY/g" datadog/modified/agent.yaml
-
-    echo "********* agent.yaml ********"
-    cat datadog/modified/agent.yaml
-    echo "********* aagent.yaml end ********"
+    echo "creating namespace datadog"
+    # create a separate namespace to run datadog in
+    create_namespace_if_missing datadog
     
-    # apply agent
-    kubectl apply -f datadog/modified/agent.yaml
+    # set up the cluster agent key if it does not exist
+    if [[ -z $(kubectl get secrets --all-namespaces | grep datadogclusterkey) ]]
+    then
+        echo "datadogclusterkey does not exist, creating secret"
+        kubectl create secret generic datadogclusterkey --from-literal api-key=${DD_CLUSTER_AGENT_AUTH_TOKEN} --namespace datadog
+    else
+        echo "datadogclusterkey found."
+    fi
 
+    # put the dd_api_key and dd_app_key into k8s secrets (if they don't exist)
+    if [[ -z $(kubectl get secrets --all-namespaces | grep datadogapikey) ]]
+    then
+        echo "datadogapikey does not exist, creating secret"
+        kubectl create secret generic datadogapikey --from-literal api-key=${DD_API_KEY} --namespace datadog
+    else
+        echo "datadogapikey found."
+    fi
+    if [[ -z $(kubectl get secrets --all-namespaces | grep datadogappkey) ]]
+    then
+        echo "datadogappkey does not exist, creating secret"
+        kubectl create secret generic datadogappkey --from-literal app-key=${DD_APP_KEY} --namespace datadog
+    else
+        echo "datadogappkey found."
+    fi
+
+    echo "api key: $DD_API_KEY"
+    echo "app key: $DD_APP_KEY"
+
+    # we need to check for existing secrets on upgrade
+
+if [[ -z $(helm list --all-namespaces | grep -v cluster | grep datadog) ]]
+    then
+        echo "datadog doesnt exist"
+    else
+    helm list --all-namespaces
+helm uninstall datadog --namespace datadog
+fi
+    # deploy datadog via helm v3
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog-agent") --namespace "datadog" -f ./datadog/datadog-values.yaml \
+            datadog \
+            --set datadog.apiKey=$datadogapikey \
+            --set datadog.appKey=$datadogappkey \
+            --set datadog.apiKeyExistingSecret=$datadogapikey \
+            --set datadog.appKeyExistingSecret=$datadogappkey \
+            --set clusterAgent.token=$datadogclusterkey \
+            stable/datadog --set targetSystem=linux --version 2.3.6
+
+if [[ -z $(helm list --all-namespaces | grep datadog-cluster-agent) ]]
+    then
+        echo "datadogdatadog-cluster-agent doesnt exist"
+    else
+    helm list --all-namespaces
+helm uninstall datadog-cluster-agent --namespace datadog
+fi
+    # deploy cluster-agent via helm v3
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog-cluster-agent") --namespace "datadog" \
+            datadog-cluster-agent \
+            --set datadog.apiKey=$datadogapikey \
+            --set datadog.appKey=$datadogappkey  \
+            --set datadog.apiKeyExistingSecret=$datadogapikey \
+            --set datadog.appKeyExistingSecret=$datadogappkey \
+            --set clusterAgent.enabled=true \
+            --set clusterAgent.metricsProvider.enabled=true \
+            --set clusterAgent.token=$datadogclusterkey \
+            stable/datadog --set targetSystem=linux --version 2.3.6
+
+    # helm list - show deployments
+    helm list --all-namespaces
+
+    echo "helm deployments finished."
     
 }
 
@@ -278,7 +317,8 @@ function command_destroy {
     gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Remove datadog from the cluster
-    helm uninstall "datadog" || true
+    echo "REMOVE DATADOG"
+    helm uninstall $(helm list --all-namespaces | grep datadog | cut -d' ' -f1) --namespace datadog || true
 
     # Remove the Vault Helm release
     helm uninstall "vault" --namespace $HELM_cluster_id || true

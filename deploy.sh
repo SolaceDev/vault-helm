@@ -58,7 +58,7 @@ function command_help {
     echo "      will be pulled from vault.maas-vault-prod.mymaas.net:8200"
     echo ""
     echo "      example:  ./deploy.sh --command_name=deploy --cluster_id=maas-dev --project_id=maas-vault-dev --region=us-east1 \\"
-    echo "                --datadog-api-key=abcde1234556677889"
+    echo "                --datadog-api-key=abcde1234556677889 --datadog-app-key=zzxxxccv1234556677889"
     echo ""
     echo "--command_name=destroy --cluster_id= [ --project_id= ]"
     echo "      The destroy command unprovisions all of the infrastructure used by a Vault"
@@ -127,7 +127,7 @@ function command_deploy {
 # All parameters are now passed and environment variables to docker run command in deploy_local.sh
 # Check to make sure that all the required variables have been passed:
 
-if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ] || [ -z "$DD_API_KEY" ]
+if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ] || [ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ] || [ -z "$DD_CLUSTER_AGENT_AUTH_TOKEN" ]
   then
       echo "deploy.sh error:"
       echo ""
@@ -152,7 +152,7 @@ fi
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    ./helm/helm.sh --command-name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY
+    ./helm/helm.sh --command-name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY --datadog_app_key=$DD_APP_KEY --datadog_cluster_key=$DD_CLUSTER_AGENT_AUTH_TOKEN
 }
 
 function command_validate {

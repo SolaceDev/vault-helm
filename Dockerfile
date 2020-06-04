@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE}
 
 WORKDIR vault
 
-COPY helm ./helm
+COPY helm/ ./helm
 COPY *.sh ./
 COPY terraform ./terraform
 
