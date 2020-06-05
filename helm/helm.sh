@@ -54,6 +54,12 @@ then
     echo "PROJECT_ID: $HELM_project_id"
     echo "REGION: $HELM_region"
     echo ""
+    echo "Re-run the command with proper arguments:"
+    echo ""
+    echo "./helm/helm.sh --command-name=deploy --HELM_cluster_id=<HELM_cluster_id> --HELM_project_id=<HELM_project_id> --HELM_region=<REGION>"
+    echo ""
+    echo "This script is normally called via deploy.sh and is not normally called directly from the command line."
+    echo ""
       
     exit 1
 fi
@@ -240,7 +246,8 @@ spec:
     if [[ -z $(kubectl get secrets --all-namespaces | grep datadogclusterkey) ]]
     then
         echo "datadogclusterkey does not exist, creating secret"
-        kubectl create secret generic datadogclusterkey --from-literal api-key=${DD_CLUSTER_AGENT_AUTH_TOKEN} --namespace datadog
+
+        kubectl create secret generic datadogclusterkey --from-literal api-key=$(echo -n '$DD_CLUSTER_AGENT_AUTH_TOKEN' | base64) --namespace datadog
     else
         echo "datadogclusterkey found."
     fi
@@ -249,20 +256,21 @@ spec:
     if [[ -z $(kubectl get secrets --all-namespaces | grep datadogapikey) ]]
     then
         echo "datadogapikey does not exist, creating secret"
-        kubectl create secret generic datadogapikey --from-literal api-key=${DD_API_KEY} --namespace datadog
+        kubectl create secret generic datadogapikey --from-literal api-key=$(echo -n '$DD_API_KEY' | base64) --namespace datadog
     else
         echo "datadogapikey found."
     fi
     if [[ -z $(kubectl get secrets --all-namespaces | grep datadogappkey) ]]
     then
         echo "datadogappkey does not exist, creating secret"
-        kubectl create secret generic datadogappkey --from-literal app-key=${DD_APP_KEY} --namespace datadog
+        kubectl create secret generic datadogappkey --from-literal app-key=$(echo -n '$DD_APP_KEY' | base64) --namespace datadog
     else
         echo "datadogappkey found."
     fi
 
     echo "api key: $DD_API_KEY"
     echo "app key: $DD_APP_KEY"
+    echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
 
     # we need to check for existing secrets on upgrade
 
@@ -276,32 +284,26 @@ fi
     # deploy datadog via helm v3
     helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog-agent") --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
-            --set datadog.apiKey=$datadogapikey \
-            --set datadog.appKey=$datadogappkey \
-            --set datadog.apiKeyExistingSecret=$datadogapikey \
-            --set datadog.appKeyExistingSecret=$datadogappkey \
-            --set clusterAgent.token=$datadogclusterkey \
+            --set datadog.apiKey=$DD_API_KEY \
+            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
 
-if [[ -z $(helm list --all-namespaces | grep datadog-cluster-agent) ]]
+if [[ -z $(helm list --all-namespaces | grep datadog-monitoring) ]]
     then
-        echo "datadogdatadog-cluster-agent doesnt exist"
+        echo "datadog-cluster-agent doesnt exist"
     else
     helm list --all-namespaces
-helm uninstall datadog-cluster-agent --namespace datadog
+helm uninstall datadog-monitoring --namespace datadog
 fi
-    # deploy cluster-agent via helm v3
+    
     helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog-cluster-agent") --namespace "datadog" \
-            datadog-cluster-agent \
-            --set datadog.apiKey=$datadogapikey \
-            --set datadog.appKey=$datadogappkey  \
-            --set datadog.apiKeyExistingSecret=$datadogapikey \
-            --set datadog.appKeyExistingSecret=$datadogappkey \
+            datadog-monitoring \
+            --set datadog.apiKey=$DD_API_KEY \
+            --set datadog.appKey=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
-            --set clusterAgent.token=$datadogclusterkey \
+            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
-
     # helm list - show deployments
     helm list --all-namespaces
 
