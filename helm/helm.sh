@@ -28,11 +28,11 @@ do
     shift
     ;;
     -datadog_api_key=*|--datadog_api_key=*)
-    DD_API_KEY="${i#*=}"
+    DDAPIKEY="${i#*=}"
     shift
     ;;
     -datadog_app_key=*|--datadog_app_key=*)
-    DD_APP_KEY="${i#*=}"
+    DDAPPKEY="${i#*=}"
     shift
     ;;
     -datadog_cluster_key=*|--datadog_cluster_key=*)
@@ -247,63 +247,80 @@ spec:
     then
         echo "datadogclusterkey does not exist, creating secret"
 
-        kubectl create secret generic datadogclusterkey --from-literal api-key=$(echo -n '$DD_CLUSTER_AGENT_AUTH_TOKEN' | base64) --namespace datadog
+        kubectl create secret generic datadogclusterkey --from-literal=token=$(echo -n '$DD_CLUSTER_AGENT_AUTH_TOKEN') --namespace datadog
     else
         echo "datadogclusterkey found."
     fi
 
     # put the dd_api_key and dd_app_key into k8s secrets (if they don't exist)
-    if [[ -z $(kubectl get secrets --all-namespaces | grep datadogapikey) ]]
+    if [[ -z $(kubectl get secrets --all-namespaces | grep dd-api-key) ]]
     then
         echo "datadogapikey does not exist, creating secret"
-        kubectl create secret generic datadogapikey --from-literal api-key=$(echo -n '$DD_API_KEY' | base64) --namespace datadog
+        kubectl create secret generic ddapikey --from-literal api-key=$(echo -n '$DDAPIKEY') --namespace datadog
     else
         echo "datadogapikey found."
-    fi
-    if [[ -z $(kubectl get secrets --all-namespaces | grep datadogappkey) ]]
+    fi 
+    if [[ -z $(kubectl get secrets --all-namespaces | grep dd-app-key) ]]
     then
         echo "datadogappkey does not exist, creating secret"
-        kubectl create secret generic datadogappkey --from-literal app-key=$(echo -n '$DD_APP_KEY' | base64) --namespace datadog
+        kubectl create secret generic ddappkey --from-literal app-key=$(echo -n '$DDAPPKEY') --namespace datadog
     else
         echo "datadogappkey found."
     fi
 
-    echo "api key: $DD_API_KEY"
-    echo "app key: $DD_APP_KEY"
+    echo "api key: $DDAPIKEY"
+    echo "app key: $DDAPPKEY"
     echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
 
-    # we need to check for existing secrets on upgrade
+    # logic to handle the helm upgrade process
+    datadog_command=$(get_helm_command_for_release "$HELM_cluster_id" "datadog-agent")
 
-if [[ -z $(helm list --all-namespaces | grep -v cluster | grep datadog) ]]
+    if [ "$datadob_command" == "install" ]
     then
-        echo "datadog doesnt exist"
-    else
-    helm list --all-namespaces
-helm uninstall datadog --namespace datadog
-fi
-    # deploy datadog via helm v3
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog-agent") --namespace "datadog" -f ./datadog/datadog-values.yaml \
+        # deploy datadog via helm v3
+        helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
-            --set datadog.apiKey=$DD_API_KEY \
-            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
+            --set datadog.apiKey='$ddapikey' \
+            --set clusterAgent.token='$datadogclusterkey' \
             stable/datadog --set targetSystem=linux --version 2.3.6
-
-if [[ -z $(helm list --all-namespaces | grep datadog-monitoring) ]]
-    then
-        echo "datadog-cluster-agent doesnt exist"
+            echo "datadog installed"
     else
-    helm list --all-namespaces
-helm uninstall datadog-monitoring --namespace datadog
-fi
+        # upgrade datadog via helm
+        helm upgrade --namespace "datadog" -f ./datadog/datadog-values.yaml \
+            datadog \
+            --set datadog.apiKeyExistingSecret='$ddapikey' \
+            --set clusterAgent.tokenExistingSecret='$datadogclusterkey' \
+            stable/datadog --set targetSystem=linux --version 2.3.6
+            echo "datadog upgraded"
+    fi
     
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "datadog-cluster-agent") --namespace "datadog" \
+echo "datadog cluster key: $datadogclusterkey"
+
+    # logic for the datadog-cluster-agent
+    if [ "$datadob_command" == "install" ]
+    then
+        helm install --namespace "datadog" \
             datadog-monitoring \
-            --set datadog.apiKey=$DD_API_KEY \
-            --set datadog.appKey=$DD_APP_KEY \
+            --set datadog.apiKey='$ddapikey' \
+            --set datadog.appKey='$ddappkey' \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
-            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
+            --set clusterAgent.token='$datadogclusterkey' \
             stable/datadog --set targetSystem=linux --version 2.3.6
+            echo "datadog-cluster-agent installed as datadog-monitoring"
+    else
+        helm upgrade --namespace "datadog" \
+            datadog-monitoring \
+            --set datadog.apiKeyExistingSecret='$ddapikey' \
+            --set datadog.appKeyExistingSecret='$ddappkey' \
+            --set clusterAgent.enabled=true \
+            --set clusterAgent.metricsProvider.enabled=true \
+            --set clusterAgent.tokenExistingSecret='$datadogclusterkey' \
+            stable/datadog --set targetSystem=linux --version 2.3.6
+            echo "datadog-cluster-agent upgraded as datadog-monitoring"
+    fi
+
+
     # helm list - show deployments
     helm list --all-namespaces
 
