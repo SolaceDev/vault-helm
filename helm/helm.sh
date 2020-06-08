@@ -253,14 +253,14 @@ spec:
     fi
 
     # put the dd_api_key and dd_app_key into k8s secrets (if they don't exist)
-    if [[ -z $(kubectl get secrets --all-namespaces | grep dd-api-key) ]]
+    if [[ -z $(kubectl get secrets --all-namespaces | grep ddapikey) ]]
     then
         echo "datadogapikey does not exist, creating secret"
         kubectl create secret generic ddapikey --from-literal api-key=$(echo -n '$DDAPIKEY') --namespace datadog
     else
         echo "datadogapikey found."
     fi 
-    if [[ -z $(kubectl get secrets --all-namespaces | grep dd-app-key) ]]
+    if [[ -z $(kubectl get secrets --all-namespaces | grep ddappkey) ]]
     then
         echo "datadogappkey does not exist, creating secret"
         kubectl create secret generic ddappkey --from-literal app-key=$(echo -n '$DDAPPKEY') --namespace datadog
@@ -273,50 +273,50 @@ spec:
     echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
 
     # logic to handle the helm upgrade process
-    datadog_command=$(get_helm_command_for_release "$HELM_cluster_id" "datadog-agent")
+    datadog_command=$(get_helm_command_for_release "$HELM_cluster_id" "datadog")
 
-    if [ "$datadob_command" == "install" ]
+    if [ "$datadog_command" == "install" ]
     then
         # deploy datadog via helm v3
         helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
-            --set datadog.apiKey='$ddapikey' \
-            --set clusterAgent.token='$datadogclusterkey' \
+            --set datadog.apiKey=$DDAPIKEY \
+            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
     else
         # upgrade datadog via helm
-        helm upgrade --namespace "datadog" -f ./datadog/datadog-values.yaml \
+        helm upgrade --install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
-            --set datadog.apiKeyExistingSecret='$ddapikey' \
-            --set clusterAgent.tokenExistingSecret='$datadogclusterkey' \
-            stable/datadog --set targetSystem=linux --version 2.3.6
+            --set datadog.apiKeyExistingSecret=$DDAPIKEY \
+            --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
+            stable/datadog --set targetSystem=linux --version 2.3.6 --replace
             echo "datadog upgraded"
     fi
     
-echo "datadog cluster key: $datadogclusterkey"
+    datadog_command=$(get_helm_command_for_release "$HELM_cluster_id" "datadog-monitoring")
 
     # logic for the datadog-cluster-agent
-    if [ "$datadob_command" == "install" ]
+    if [ "$datadog_command" == "install" ]
     then
         helm install --namespace "datadog" \
             datadog-monitoring \
-            --set datadog.apiKey='$ddapikey' \
-            --set datadog.appKey='$ddappkey' \
+            --set datadog.apiKey=$DDAPIKEY \
+            --set datadog.appKey=$DDAPPKEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
-            --set clusterAgent.token='$datadogclusterkey' \
+            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog-cluster-agent installed as datadog-monitoring"
     else
-        helm upgrade --namespace "datadog" \
+        helm upgrade --install --namespace "datadog" \
             datadog-monitoring \
-            --set datadog.apiKeyExistingSecret='$ddapikey' \
-            --set datadog.appKeyExistingSecret='$ddappkey' \
+            --set datadog.apiKeyExistingSecret=$DDAPIKEY \
+            --set datadog.appKeyExistingSecret=$DDAPPKEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
-            --set clusterAgent.tokenExistingSecret='$datadogclusterkey' \
-            stable/datadog --set targetSystem=linux --version 2.3.6
+            --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
+            stable/datadog --set targetSystem=linux --version 2.3.6 --replace
             echo "datadog-cluster-agent upgraded as datadog-monitoring"
     fi
 
