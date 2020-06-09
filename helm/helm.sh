@@ -28,11 +28,11 @@ do
     shift
     ;;
     -datadog_api_key=*|--datadog_api_key=*)
-    DDAPIKEY="${i#*=}"
+    DD_API_KEY="${i#*=}"
     shift
     ;;
     -datadog_app_key=*|--datadog_app_key=*)
-    DDAPPKEY="${i#*=}"
+    DD_APP_KEY="${i#*=}"
     shift
     ;;
     -datadog_cluster_key=*|--datadog_cluster_key=*)
@@ -67,7 +67,8 @@ fi
 export HELM_cluster_id
 
 cluster_issuer_name=${HELM_CLUSTER_ISSUER_NAME:-"letsencrypt"}
-cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
+#cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
+cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-staging-v02.api.letsencrypt.org/directory"}
 
 gcloud auth activate-service-account --key-file=${HOME}/.config/gcloud/application_default_credentials.json
 
@@ -247,7 +248,7 @@ spec:
     then
         echo "datadogclusterkey does not exist, creating secret"
 
-        kubectl create secret generic datadogclusterkey --from-literal=token=$(echo -n '$DD_CLUSTER_AGENT_AUTH_TOKEN') --namespace datadog
+        kubectl create secret generic datadogclusterkey --from-literal token=$DD_CLUSTER_AGENT_AUTH_TOKEN --namespace datadog
     else
         echo "datadogclusterkey found."
     fi
@@ -256,20 +257,20 @@ spec:
     if [[ -z $(kubectl get secrets --all-namespaces | grep ddapikey) ]]
     then
         echo "datadogapikey does not exist, creating secret"
-        kubectl create secret generic ddapikey --from-literal api-key=$(echo -n '$DDAPIKEY') --namespace datadog
+        kubectl create secret generic ddapikey --from-literal api-key=$DD_API_KEY --namespace datadog
     else
         echo "datadogapikey found."
     fi 
     if [[ -z $(kubectl get secrets --all-namespaces | grep ddappkey) ]]
     then
         echo "datadogappkey does not exist, creating secret"
-        kubectl create secret generic ddappkey --from-literal app-key=$(echo -n '$DDAPPKEY') --namespace datadog
+        kubectl create secret generic ddappkey --from-literal app-key=$DD_APP_KEY --namespace datadog
     else
         echo "datadogappkey found."
     fi
 
-    echo "api key: $DDAPIKEY"
-    echo "app key: $DDAPPKEY"
+    echo "api key: $DD_API_KEY"
+    echo "app key: $DD_APP_KEY"
     echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
 
     # logic to handle the helm upgrade process
@@ -280,7 +281,7 @@ spec:
         # deploy datadog via helm v3
         helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
-            --set datadog.apiKey=$DDAPIKEY \
+            --set datadog.apiKey=$DD_API_KEY \
             --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
@@ -288,7 +289,7 @@ spec:
         # upgrade datadog via helm
         helm upgrade --install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
-            --set datadog.apiKeyExistingSecret=$DDAPIKEY \
+            --set datadog.apiKeyExistingSecret=$DD_API_KEY \
             --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6 --replace
             echo "datadog upgraded"
@@ -301,8 +302,8 @@ spec:
     then
         helm install --namespace "datadog" \
             datadog-monitoring \
-            --set datadog.apiKey=$DDAPIKEY \
-            --set datadog.appKey=$DDAPPKEY \
+            --set datadog.apiKey=$DD_API_KEY \
+            --set datadog.appKey=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
             --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
@@ -311,8 +312,8 @@ spec:
     else
         helm upgrade --install --namespace "datadog" \
             datadog-monitoring \
-            --set datadog.apiKeyExistingSecret=$DDAPIKEY \
-            --set datadog.appKeyExistingSecret=$DDAPPKEY \
+            --set datadog.apiKeyExistingSecret=$DD_API_KEY \
+            --set datadog.appKeyExistingSecret=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
             --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
