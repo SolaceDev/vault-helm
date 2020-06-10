@@ -11,7 +11,7 @@ fi
 for i in "$@"
 do
   case $i in
-    -command_name=*|--command-name=*)
+    -command_name=*|--command_name=*)
     command_name="${i#*=}"
     shift
     ;;
@@ -56,7 +56,7 @@ then
     echo ""
     echo "Re-run the command with proper arguments:"
     echo ""
-    echo "./helm/helm.sh --command-name=deploy --HELM_cluster_id=<HELM_cluster_id> --HELM_project_id=<HELM_project_id> --HELM_region=<REGION>"
+    echo "./helm/helm.sh --command_name=<command> --HELM_cluster_id=<HELM_cluster_id> --HELM_project_id=<HELM_project_id> --HELM_region=<REGION>"
     echo ""
     echo "This script is normally called via deploy.sh and is not normally called directly from the command line."
     echo ""
@@ -81,23 +81,23 @@ function command_help {
     echo "in a Vault cluster."
     echo ""
     echo "Usage:"
-    echo "  ./helm.sh --command-name="
+    echo "  ./helm.sh --command_name="
     echo ""
     echo "Where:"
-    echo "  --command-name=    Is a command to execute.  Currently, the only recognized"
+    echo "  --command_name=    Is a command to execute.  Currently, the only recognized"
     echo "                     commands are: deploy, destroy, help and lint.  See below for"
     echo "                     details on each of these commands."
     echo ""
     echo "Commands:"
-    echo "  --command-name=deploy"
+    echo "  --command_name=deploy"
     echo "      The deploy command installs the necessary Helm releases and Kubernetes"
     echo "      resources for a Vault cluster."
     echo ""
-    echo "  --command-name=destroy"
+    echo "  --command_name=destroy"
     echo "      The destroy command unprovisions all of the Kubernetes resources used by a Vault"
     echo "      cluster."
     echo ""
-    echo " --command-name=lint"
+    echo " --command_name=lint"
     echo "      This command runs:  helm lint -f maas-values.yaml ./vault-helm"
     echo ""
     echo "  help"
@@ -185,60 +185,6 @@ function command_deploy {
     # Make sure Helm repos are up to date.
     helm repo update
 
-    # Run the appropriate Helm command
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.14.1
-
-    # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
-    while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
-        sleep 1
-    done
-
-    # Create a ClusterIssuer resource
-    echo "apiVersion: cert-manager.io/v1alpha2
-kind: ClusterIssuer
-metadata:
-  name: ${cluster_issuer_name}
-spec:
-  acme:
-    # certificates, and issues related to your account.
-    email: nobody@solace.com
-    server: ${cluster_issuer_server}
-    privateKeySecretRef:
-      name: solace-issuer-account-key
-    solvers:
-    - dns01:
-        clouddns:
-            project: ${HELM_project_id}" | kubectl apply -f -
-
-    # Create the Vault cluster namespace if it doesn't exist
-    create_namespace_if_missing $HELM_cluster_id
-
-    echo "apiVersion: cert-manager.io/v1alpha2
-kind: Certificate
-metadata:
-  name: vault-certificate
-  namespace: ${HELM_cluster_id}
-spec:
-  secretName: vault-server-tls
-  issuerRef:
-    kind: ClusterIssuer
-    name: ${cluster_issuer_name}
-  commonName: ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
-  dnsNames:
-  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply -f -
-
-    # Run the appropriate Helm command for the Vault release
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
-            vault ./vault-helm \
-            --namespace $HELM_cluster_id \
-            --values ./maas-values.yaml \
-            --set maas.gcpProject=$HELM_project_id \
-            --set maas.lbAddress=$HELM_lb_address \
-            --set maas.kmsProject=$HELM_project_id \
-            --set maas.kmsKeyRing=$HELM_project_id \
-            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
-            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
-
     echo "creating namespace datadog"
     # create a separate namespace to run datadog in
     create_namespace_if_missing datadog
@@ -321,6 +267,63 @@ spec:
             echo "datadog-cluster-agent upgraded as datadog-monitoring"
     fi
 
+    # we need to get the pod IP for dogstatsd to inject the ip when we install helm
+    DD_POD_IP=$(kubectl get po -n datadog -o=wide | grep datadog-monitoring-cluster-agent | awk '{print $6}')
+
+    # Run the appropriate Helm command
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
+
+    # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
+    while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
+        sleep 1
+    done
+
+    # Create a ClusterIssuer resource
+    echo "apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: ${cluster_issuer_name}
+spec:
+  acme:
+    # certificates, and issues related to your account.
+    email: nobody@solace.com
+    server: ${cluster_issuer_server}
+    privateKeySecretRef:
+      name: solace-issuer-account-key
+    solvers:
+    - dns01:
+        clouddns:
+            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
+
+    # Create the Vault cluster namespace if it doesn't exist
+    create_namespace_if_missing $HELM_cluster_id
+
+    echo "apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: vault-certificate
+  namespace: ${HELM_cluster_id}
+spec:
+  secretName: vault-server-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: ${cluster_issuer_name}
+  commonName: ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
+  dnsNames:
+  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply --validate=false -f -
+
+    # Run the appropriate Helm command for the Vault release
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
+            vault ./vault-helm \
+            --namespace $HELM_cluster_id \
+            --values ./maas-values.yaml \
+            --set maas.gcpProject=$HELM_project_id \
+            --set maas.lbAddress=$HELM_lb_address \
+            --set maas.kmsProject=$HELM_project_id \
+            --set maas.kmsKeyRing=$HELM_project_id \
+            --set maas.datadogDogstatsdIP=$DD_POD_IP \
+            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
+            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
     # helm list - show deployments
     helm list --all-namespaces
@@ -338,7 +341,8 @@ function command_destroy {
 
     # Remove datadog from the cluster
     echo "REMOVE DATADOG"
-    helm uninstall $(helm list --all-namespaces | grep datadog | cut -d' ' -f1) --namespace datadog || true
+    helm uninstall datadog --namespace datadog || true
+    helm uninstall datadog-monitoring --namespace datadog || true
 
     # Remove the Vault Helm release
     helm uninstall "vault" --namespace $HELM_cluster_id || true

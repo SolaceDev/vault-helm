@@ -6,6 +6,7 @@ maas:
   kmsKeyRing: "maas-vault-dev"
   kmsCryptoKey: "maas-vault-dev-unseal"
   bucketName: "maas-vault-dev-vault-dev-data"
+  datadogDogstatsdIP: ""
 
 global:
   # Enable TLS
@@ -65,4 +66,10 @@ server:
       storage "gcs" {
         bucket     = "{{ .Values.maas.bucketName }}"
         ha_enabled = "true"
+      }
+
+      # configure telemetry for dogstatsd
+      telemetry {
+        dogstatsd_addr = "{{ .Values.maas.datadogDogstatsdIP:8125 }}"
+        disable_hostname = "true"
       }

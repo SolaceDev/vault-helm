@@ -152,15 +152,25 @@ fi
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    ./helm/helm.sh --command-name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY --datadog_app_key=$DD_APP_KEY --datadog_cluster_key=$DD_CLUSTER_AGENT_AUTH_TOKEN
+    ./helm/helm.sh --command_name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY --datadog_app_key=$DD_APP_KEY --datadog_cluster_key=$DD_CLUSTER_AGENT_AUTH_TOKEN
 }
 
 function command_validate {
+
+  if [ -z "$REGION" ]; then
+    echo "Region was not provided; using the default of us-east1"
+    REGION="us-east1"
+  fi
+  if [ -z "$PROJECT_ID" ]; then
+    echo "project_id was not provided; using the default of maas-vault-dev"
+    PROJECT_ID="maas-vault-dev"
+  fi
+
   export TF_VAR_cluster_id=$CLUSTER_ID
   export HELM_cluster_id=$CLUSTER_ID
 
   ./terraform/terraform.sh validate
-  ./helm/helm.sh --command-name=lint
+  ./helm/helm.sh --command_name=lint --HELM_cluster_id=$CLUSTER_ID --HELM_project_id=$PROJECT_ID --HELM_region=$REGION 
 }
 
 function command_vaultinit {

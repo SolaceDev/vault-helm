@@ -35,7 +35,7 @@ datadog:
   ## If you are using clusterAgent.metricsProvider.enabled = true, you must set
   ## a Datadog application key for read access to your metrics.
   #
-  appKey:  # <DATADOG_APP_KEY>
+  appKey: <DATADOG_APP_KEY>
 
   ## @param appKeyExistingSecret - string - optional
   ## Use existing Secret which stores APP key instead of creating a new one
@@ -184,7 +184,7 @@ datadog:
     ## Enable this to make each node accept non-local statsd traffic.
     ## ref: https://github.com/DataDog/docker-dd-agent#environment-variables
     #
-    nonLocalTraffic:  # false
+    nonLocalTraffic: true # false
 
   ## @param collectEvents - boolean - optional - default: false
   ## Enables this to start event collection from the kubernetes API
