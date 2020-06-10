@@ -68,8 +68,7 @@ server:
         ha_enabled = "true"
       }
 
-      # configure telemetry for dogstatsd
       telemetry {
-        dogstatsd_addr = "{{ .Values.maas.datadogDogstatsdIP:8125 }}"
-        disable_hostname = "true"
+        dogstatsd_addr = "{{ .Values.maas.datadogDogstatsdIP }}:8125"
+        disable_hostname = true
       }
