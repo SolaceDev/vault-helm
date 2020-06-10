@@ -219,60 +219,83 @@ function command_deploy {
     echo "app key: $DD_APP_KEY"
     echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
 
-    # logic to handle the helm upgrade process
-    datadog_command=$(get_helm_command_for_release "$HELM_cluster_id" "datadog")
-
-    if [ "$datadog_command" == "install" ]
+    # logic to handle the datadog-agent upgrade process
+    if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" ]]
     then
+        echo "*********************"
         echo "installing datadog..."
+        echo "*********************"
         # deploy datadog via helm v3
         helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
-            datadog \
+            datadog-agent \
             --set datadog.apiKey=$DD_API_KEY \
             --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
-    else
+    elif [[ $(get_helm_command_for_release "datadog" "datadog") == "upgrade" ]]
+    then
+        echo "*********************"
         echo "upgrading datadog..."
+        echo "*********************"
         # upgrade datadog via helm
-        helm upgrade --namespace "datadog" -f ./datadog/datadog-values.yaml \
-            datadog \
+        helm upgrade --install --namespace "datadog" -f ./datadog/datadog-values.yaml \
+            datadog-agent \
             --set datadog.apiKeyExistingSecret=$DD_API_KEY \
             --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
-            stable/datadog --set targetSystem=linux --version 2.3.6 --replace
+            stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog upgraded"
+    else
+        echo "no helm command specified for datadog.  We will do nothing in this case."
     fi
     
-    datadog_command=$(get_helm_command_for_release "$HELM_cluster_id" "datadog-monitoring")
-
     # logic for the datadog-cluster-agent
-    if [ "$datadog_command" == "install" ]
+    if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" ]]
     then
+        echo "*********************"
+        echo "installing datadog-cluster-agent"
+        echo "*********************"
         helm install --namespace "datadog" \
-            datadog-monitoring \
+            datadog-cluster-agent \
             --set datadog.apiKey=$DD_API_KEY \
             --set datadog.appKey=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
             --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
-            echo "datadog-cluster-agent installed as datadog-monitoring"
-    else
-        echo "upgrading datadog-monitoring..."
-        helm upgrade --namespace "datadog" \
-            datadog-monitoring \
+            echo "datadog-cluster-agent installed"
+    elif [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "upgrade" ]]
+    then
+        echo "*********************"
+        echo "upgrading datadog-cluster-agent..."
+        echo "*********************"
+        helm upgrade --install --namespace "datadog" \
+            datadog-cluster-agent \
             --set datadog.apiKeyExistingSecret=$DD_API_KEY \
             --set datadog.appKeyExistingSecret=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
             --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
-            stable/datadog --set targetSystem=linux --version 2.3.6 --replace
-            echo "datadog-cluster-agent upgraded as datadog-monitoring"
+            stable/datadog --set targetSystem=linux --version 2.3.6
+            echo "datadog-cluster-agent upgraded"
+    else
+        echo "no helm command specified for datadog-cluster-agent.  We will do nothing in this case."
     fi
 
+    # wait for the IP of the datadog pod to become ready
+    # if we don't wait, the vault-helm install could fail when
+    # trying to contact the telemetry endpoint
+    echo "pod details"
+    kubectl -n datadog get po | grep datadog-cluster-agent-cluster-agent | awk '{print $1}'
+    while [[ $(kubectl -n datadog get pods $(kubectl -n datadog get po | grep datadog-cluster-agent-cluster-agent | awk '{print $1}') -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]
+    do
+        echo "waiting for datadog cluster agent pod to become ready..."
+        sleep 1
+    done
+
+
     # we need to get the pod IP for dogstatsd to inject the ip when we install helm
-    DD_POD_IP=$(kubectl get po -n datadog -o=wide | grep datadog-monitoring-cluster-agent | awk '{print $6}')
-    echo "datadog pod ip: ${$DD_POD_IP}"
+    DD_POD_IP=$(kubectl get po -n datadog -o=wide | grep datadog-cluster-agent-cluster-agent | awk '{print $6}')
+    echo "datadog pod ip: ${DD_POD_IP}"
 
     # Run the appropriate Helm command
     helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
@@ -346,7 +369,7 @@ function command_destroy {
     # Remove datadog from the cluster
     echo "REMOVE DATADOG"
     helm uninstall datadog --namespace datadog || true
-    helm uninstall datadog-monitoring --namespace datadog || true
+    helm uninstall datadog-cluster-agent --namespace datadog || true
 
     # Remove the Vault Helm release
     helm uninstall "vault" --namespace $HELM_cluster_id || true
