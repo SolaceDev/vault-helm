@@ -6,7 +6,7 @@ maas:
   kmsKeyRing: "maas-vault-dev"
   kmsCryptoKey: "maas-vault-dev-unseal"
   bucketName: "maas-vault-dev-vault-dev-data"
-  datadogDogstatsdIP: ""
+  datadogDogstatsdIP: "localhost"
 
 global:
   # Enable TLS
