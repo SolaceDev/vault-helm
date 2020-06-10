@@ -224,6 +224,7 @@ function command_deploy {
 
     if [ "$datadog_command" == "install" ]
     then
+        echo "installing datadog..."
         # deploy datadog via helm v3
         helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
@@ -232,8 +233,9 @@ function command_deploy {
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
     else
+        echo "upgrading datadog..."
         # upgrade datadog via helm
-        helm upgrade --install --namespace "datadog" -f ./datadog/datadog-values.yaml \
+        helm upgrade --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog \
             --set datadog.apiKeyExistingSecret=$DD_API_KEY \
             --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
@@ -256,7 +258,8 @@ function command_deploy {
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog-cluster-agent installed as datadog-monitoring"
     else
-        helm upgrade --install --namespace "datadog" \
+        echo "upgrading datadog-monitoring..."
+        helm upgrade --namespace "datadog" \
             datadog-monitoring \
             --set datadog.apiKeyExistingSecret=$DD_API_KEY \
             --set datadog.appKeyExistingSecret=$DD_APP_KEY \
@@ -269,6 +272,7 @@ function command_deploy {
 
     # we need to get the pod IP for dogstatsd to inject the ip when we install helm
     DD_POD_IP=$(kubectl get po -n datadog -o=wide | grep datadog-monitoring-cluster-agent | awk '{print $6}')
+    echo "datadog pod ip: ${$DD_POD_IP}"
 
     # Run the appropriate Helm command
     helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
