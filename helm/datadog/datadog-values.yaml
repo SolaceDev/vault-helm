@@ -29,19 +29,19 @@ datadog:
   ## Use existing Secret which stores API key instead of creating a new one.
   ## If set, this parameter takes precedence over "apiKey".
   #
-  apiKeyExistingSecret:  # <DATADOG_API_KEY_SECRET>
+  apiKeyExistingSecret:   #<DATADOG_API_KEY_SECRET>
 
   ## @param appKey - string - optional
   ## If you are using clusterAgent.metricsProvider.enabled = true, you must set
   ## a Datadog application key for read access to your metrics.
   #
-  appKey: <DATADOG_APP_KEY>
+  appKey: #<DATADOG_APP_KEY>
 
   ## @param appKeyExistingSecret - string - optional
   ## Use existing Secret which stores APP key instead of creating a new one
   ## If set, this parameter takes precedence over "appKey".
   #
-  appKeyExistingSecret:  # <DATADOG_APP_KEY_SECRET>
+  appKeyExistingSecret:   #<DATADOG_APP_KEY_SECRET>
 
   ## @param securityContext - object - optional
   ## You can modify the security context used to run the containers by
@@ -371,7 +371,7 @@ clusterAgent:
   ## @param enabled - boolean - required
   ## Set this to true to enable Datadog Cluster Agent
   #
-  enabled: false
+  enabled: true
 
   ## @param image - object - required
   ## Define the Datadog Cluster-Agent image to work with.

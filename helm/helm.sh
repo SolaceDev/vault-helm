@@ -229,7 +229,6 @@ function command_deploy {
         helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog-agent \
             --set datadog.apiKey=$DD_API_KEY \
-            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
     elif [[ $(get_helm_command_for_release "datadog" "datadog") == "upgrade" ]]
@@ -241,7 +240,6 @@ function command_deploy {
         helm upgrade --install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog-agent \
             --set datadog.apiKeyExistingSecret=$DD_API_KEY \
-            --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog upgraded"
     else
@@ -260,7 +258,6 @@ function command_deploy {
             --set datadog.appKey=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
-            --set clusterAgent.token=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog-cluster-agent installed"
     elif [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "upgrade" ]]
@@ -274,7 +271,6 @@ function command_deploy {
             --set datadog.appKeyExistingSecret=$DD_APP_KEY \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
-            --set clusterAgent.tokenExistingSecret=$DD_CLUSTER_AGENT_AUTH_TOKEN \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog-cluster-agent upgraded"
     else
@@ -339,6 +335,9 @@ spec:
   dnsNames:
   - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply --validate=false -f -
 
+    echo "*********************"
+    echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
+    echo "*********************"
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
             vault ./vault-helm \
@@ -367,8 +366,7 @@ function command_destroy {
     gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Remove datadog from the cluster
-    echo "REMOVE DATADOG"
-    helm uninstall datadog --namespace datadog || true
+    helm uninstall datadog-agent --namespace datadog || true
     helm uninstall datadog-cluster-agent --namespace datadog || true
 
     # Remove the Vault Helm release
