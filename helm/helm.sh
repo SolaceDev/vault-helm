@@ -39,6 +39,10 @@ do
     DD_CLUSTER_AGENT_AUTH_TOKEN="${i#*=}"
     shift
     ;;
+    -enable_datadog=*|--enable_datadog=*)
+    DD_CLUSTER_AGENT_AUTH_TOKEN="${i#*=}"
+    shift
+    ;;
   esac
 done
 
@@ -189,6 +193,7 @@ function command_deploy {
     # create a separate namespace to run datadog in
     create_namespace_if_missing datadog
     
+    # We want to use k8s secrets to store the keys, but it's currently not working per the dd documentation (open ticket)
     # set up the cluster agent key if it does not exist
     if [[ -z $(kubectl get secrets --all-namespaces | grep datadogclusterkey) ]]
     then
@@ -218,9 +223,9 @@ function command_deploy {
     echo "api key: $DD_API_KEY"
     echo "app key: $DD_APP_KEY"
     echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
-
+echo "enable_datadog: $enable_datadog"
     # logic to handle the datadog-agent upgrade process
-    if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" ]]
+    if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]]
     then
         echo "*********************"
         echo "installing datadog..."
@@ -231,7 +236,7 @@ function command_deploy {
             --set datadog.apiKey=$DD_API_KEY \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
-    elif [[ $(get_helm_command_for_release "datadog" "datadog") == "upgrade" ]]
+    elif [[ $(get_helm_command_for_release "datadog" "datadog") == "upgrade" && $enable_datadog == "yes" ]]
     then
         echo "*********************"
         echo "upgrading datadog..."
@@ -247,7 +252,7 @@ function command_deploy {
     fi
     
     # logic for the datadog-cluster-agent
-    if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" ]]
+    if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" && $enable_datadog == "yes" ]]
     then
         echo "*********************"
         echo "installing datadog-cluster-agent"
@@ -260,7 +265,7 @@ function command_deploy {
             --set clusterAgent.metricsProvider.enabled=true \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog-cluster-agent installed"
-    elif [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "upgrade" ]]
+    elif [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "upgrade" && $enable_datadog == "yes" ]]
     then
         echo "*********************"
         echo "upgrading datadog-cluster-agent..."
@@ -287,11 +292,6 @@ function command_deploy {
         echo "waiting for datadog cluster agent pod to become ready..."
         sleep 1
     done
-
-
-    # we need to get the pod IP for dogstatsd to inject the ip when we install helm
-    DD_POD_IP=$(kubectl get po -n datadog -o=wide | grep datadog-cluster-agent-cluster-agent | awk '{print $6}')
-    echo "datadog pod ip: ${DD_POD_IP}"
 
     # Run the appropriate Helm command
     helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
@@ -347,7 +347,6 @@ spec:
             --set maas.lbAddress=$HELM_lb_address \
             --set maas.kmsProject=$HELM_project_id \
             --set maas.kmsKeyRing=$HELM_project_id \
-            --set maas.datadogDogstatsdIP=$DD_POD_IP \
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
