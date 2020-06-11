@@ -49,6 +49,12 @@ Finally, build the GCP credentials file:
 
 You should now be able to run gcloud and vault commands.
 
+## Datadog feature flag
+To enable datadog deployment for kubernetes/vault, modify deploy_local.sh:
+
+# This is the main feature flag for enabling datadog deployment
+enable_datadog="yes"
+
 ### Reference Environments
 This project is designed to easily deploy ephemeral instances for development
 (of Vault features) activities.  However, there are some well-known

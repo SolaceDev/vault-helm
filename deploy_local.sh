@@ -2,7 +2,7 @@
 set -e${DEBUG+x}o pipefail
 
 # This is the main feature flag for enabling datadog deployment
-enable_datadog="yes"
+enable_datadog="no"
 
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID="maas-vault-dev"
