@@ -184,7 +184,7 @@ datadog:
     ## Enable this to make each node accept non-local statsd traffic.
     ## ref: https://github.com/DataDog/docker-dd-agent#environment-variables
     #
-    nonLocalTraffic: false
+    nonLocalTraffic: true #false
 
   ## @param collectEvents - boolean - optional - default: false
   ## Enables this to start event collection from the kubernetes API
@@ -318,7 +318,7 @@ datadog:
     ## Set this to true to enable process collection in process monitoring agent
     ## Requires processAgent.enabled to be set to true to have any effect
     #
-    processCollection: false
+    processCollection: true
 
   ## @param systemProbe - object - required
   ## Enable systemProbe agent and provide custom configs

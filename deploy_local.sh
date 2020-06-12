@@ -2,7 +2,10 @@
 set -e${DEBUG+x}o pipefail
 
 # This is the main feature flag for enabling datadog deployment
-enable_datadog="no"
+enable_datadog="yes"
+
+# this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
+export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
 
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID="maas-vault-dev"
@@ -33,6 +36,10 @@ do
     ;;
     -datadog_app_key=*|--datadog_app_key=*)
     DD_APP_KEY="${i#*=}"
+    shift
+    ;;
+    -github_token=*|--github_token=*)
+    GITHUB_TOKEN="${i#*=}"
     shift
     ;;
   esac
@@ -88,16 +95,39 @@ if [[ $enable_datadog == "yes" ]]
 then
   if [ "$command_name" == "deploy" ] && ([ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ])
   then
-    echo "The datadog api key or app key was not provided."
-    echo "default dd api/app key unset, quitting"
-    exit 1
-  
-    # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
-    # export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
-    # gcloud auth login
-    # local GITHUB_TOKEN=$(vault read -field=github_token github/dev/github_token | base64 -D)
-    # vault login -method=github token=${GITHUB_TOKEN}
-    # DD_API_KEY=$(vault read -field=datadog_api_key datadog/dev/api_key | base64 -D)
+    echo "no datadog api or app keys have been provided.  We will attempt to get from vault..."
+    echo ""
+    if [[ -z $GITHUB_TOKEN ]]
+    then
+      echo "You have not provided datadog keys or a github token."
+      echo "if you don't provide keys, you must provide a github token which has access to $VAULT_ADDR"
+      echo ""
+      echo "please run the command again with --github_token=<your token>"
+      exit 1
+    fi   
+
+    # set the vault path for the kv
+    vault_path="kv/datadog/dev"
+
+    # log into vault to grab the keys
+    echo "logging into vault to check for keys at $vault_path"
+    vault login -method=github token=${GITHUB_TOKEN}
+    echo ""
+
+    # retrieve the keys from vault
+    DD_API_KEY=$(vault kv get -field=api-key $vault_path)
+    DD_APP_KEY=$(vault kv get -field=app-key $vault_path)
+
+    echo "retrieved DD_API_KEY: $DD_API_KEY"
+    echo "retrieved DD_APP_KEY: $DD_APP_KEY"
+
+    # ensure that the keys were not empty
+    if [[ -z $DD_API_KEY || -z $DD_APP_KEY ]]
+    then
+      echo "Retrieved key was blank for APP or API!"
+      echo "please check vault to ensure the vaules exist in: $vault_path"
+      exit 1
+    fi
   fi
 fi
 

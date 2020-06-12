@@ -40,7 +40,7 @@ do
     shift
     ;;
     -enable_datadog=*|--enable_datadog=*)
-    DD_CLUSTER_AGENT_AUTH_TOKEN="${i#*=}"
+    enable_datadog="${i#*=}"
     shift
     ;;
   esac
@@ -223,7 +223,8 @@ function command_deploy {
     echo "api key: $DD_API_KEY"
     echo "app key: $DD_APP_KEY"
     echo "cluster tokey: $DD_CLUSTER_AGENT_AUTH_TOKEN"
-echo "enable_datadog: $enable_datadog"
+    echo "enable_datadog: $enable_datadog"
+
     # logic to handle the datadog-agent upgrade process
     if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]]
     then
@@ -270,7 +271,7 @@ echo "enable_datadog: $enable_datadog"
         echo "*********************"
         echo "upgrading datadog-cluster-agent..."
         echo "*********************"
-        helm upgrade --install --namespace "datadog" \
+        helm upgrade --namespace "datadog" \
             datadog-cluster-agent \
             --set datadog.apiKeyExistingSecret=$DD_API_KEY \
             --set datadog.appKeyExistingSecret=$DD_APP_KEY \
