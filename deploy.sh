@@ -123,25 +123,6 @@ function command_destroy {
 #   This function handles running the script actions for the deploy command.
 #
 function command_deploy {
-
-# All parameters are now passed and environment variables to docker run command in deploy_local.sh
-# Check to make sure that all the required variables have been passed:
-
-if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ] || [ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ] || [[ $enable_datadog == "yes" && -z "$DD_CLUSTER_AGENT_AUTH_TOKEN" ]]
-  then
-      echo "deploy.sh error:"
-      echo ""
-      echo "command_name, CLUSTER_ID, PROJECT_ID, REGION and DD_API_KEY are required arguments."
-      echo "Please re-run the command with the proper arguments set:"
-      echo ""
-      echo "command name: $command_name"
-      echo "CLUSTER_ID: $CLUSTER_ID"
-      echo "PROJECT_ID: $PROJECT_ID"
-      echo "REGION: $REGION"
-      echo ""
-      exit 1
-fi
-
     export TF_VAR_cluster_id=$CLUSTER_ID
     export TF_VAR_project_id=$PROJECT_ID
     export TF_VAR_region=$REGION

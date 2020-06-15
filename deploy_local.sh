@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e${DEBUG+x}o pipefail
 
-# This is the main feature flag for enabling datadog deployment
-enable_datadog="yes"
-
 # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
 export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
 
@@ -11,6 +8,7 @@ export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
 PROJECT_ID="maas-vault-dev"
 REGION="us-east1"
 
+# assign arguments to variables
 for i in "$@"
 do
   case $i in
@@ -42,17 +40,29 @@ do
     GITHUB_TOKEN="${i#*=}"
     shift
     ;;
+    -enable_datadog=*|--enable_datadog=*)
+    enable_datadog="${i#*=}"
+    shift
+    ;;
   esac
 done
 
-if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ]
+# required:  cluster_id, command_name
+# optional:  region, project_id (default set above)
+# optional:  enable_datadog - if set, either a github token or api/app key are required
+# logic:
+# if any of cluster_id, project_id, region, command_name are missing, exit
+# if (datadog is enabled and github token is null) OR (datadog is enabled and (api key or app key are null)), exit
+#
+# fix  || ([ $enable_datadog == "yes" ] && [ -z "$GITHUB_TOKEN" ]) || ([ $enable_datadog == "yes" ] || [ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ])
+if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ] 
 then
     echo "deploy_local.sh error:"
     echo ""
-    echo "command name: $command_name"
-    echo "  CLUSTER_ID: $CLUSTER_ID"
-    echo "  PROJECT_ID: $PROJECT_ID"
-    echo "      REGION: $REGION"
+    echo "[required] command name: $command_name"
+    echo "[required]   CLUSTER_ID: $CLUSTER_ID"
+    echo "[optional]   PROJECT_ID: $PROJECT_ID"
+    echo "[optional]       REGION: $REGION"
     echo ""
     echo "This command needs to be run with parameters now.  Commands are specified as --command_name=<command>"
     echo ""
@@ -63,7 +73,7 @@ then
     echo "In the deploy scenario, --cluster_id and --datadog_api_key are required parameters."
     echo "--project_id and --region are set as defaults, but you can override those:"
     echo ""
-    echo "./deploy_local.sh --command_name=deploy --cluster_id=vault-${USER} --project_id=maas-vault-dev --region=us-east1 --datadog_api_key=abcde123456789 --datadog_app_key=zxvblkj9876543"
+    echo "./deploy_local.sh --command_name=deploy --cluster_id=vault-${USER} --project_id=maas-vault-dev --region=us-east1 --datadog_api_key=abcde123456789 --datadog_app_key=zxvblkj9876543 --enable_datadog=yes"
     echo ""
     echo "*************"
     echo "  to destroy:"
@@ -93,9 +103,14 @@ esac
 
 if [[ $enable_datadog == "yes" ]]
 then
+  # Main feature flag for enable/disable datadog
+  echo "*****************************"
+  echo "datadog has been enabled."
+  echo "*****************************"
+
   if [ "$command_name" == "deploy" ] && ([ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ])
   then
-    echo "no datadog api or app keys have been provided.  We will attempt to get from vault..."
+    echo "you have enabled datadog but no datadog api or app keys have been provided.  We will attempt to get from vault..."
     echo ""
     if [[ -z $GITHUB_TOKEN ]]
     then
@@ -111,6 +126,7 @@ then
 
     # log into vault to grab the keys
     echo "logging into vault to check for keys at $vault_path"
+    echo ""
     vault login -method=github token=${GITHUB_TOKEN}
     echo ""
 
@@ -120,15 +136,22 @@ then
 
     echo "retrieved DD_API_KEY: $DD_API_KEY"
     echo "retrieved DD_APP_KEY: $DD_APP_KEY"
-
+    echo ""
+    
     # ensure that the keys were not empty
     if [[ -z $DD_API_KEY || -z $DD_APP_KEY ]]
     then
       echo "Retrieved key was blank for APP or API!"
-      echo "please check vault to ensure the vaules exist in: $vault_path"
+      echo "please check vault to ensure the values exist in: $vault_path"
       exit 1
     fi
   fi
+  else
+    echo "*****************************"
+    echo "datadog is disabled."
+    echo "run with --enable-datadog=yes"
+    echo "to enable"
+    echo "*****************************"
 fi
 
 
