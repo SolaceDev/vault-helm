@@ -35,10 +35,6 @@ do
     DD_APP_KEY="${i#*=}"
     shift
     ;;
-    -datadog_cluster_key=*|--datadog_cluster_key=*)
-    DD_CLUSTER_AGENT_AUTH_TOKEN="${i#*=}"
-    shift
-    ;;
     -enable_datadog=*|--enable_datadog=*)
     enable_datadog="${i#*=}"
     shift
@@ -192,17 +188,6 @@ function command_deploy {
     echo "creating namespace datadog"
     # create a separate namespace to run datadog in
     create_namespace_if_missing datadog
-    
-    # We want to use k8s secrets to store the keys, but it's currently not working per the dd documentation (open ticket)
-    # set up the cluster agent key if it does not exist
-    if [[ -z $(kubectl get secrets --all-namespaces | grep datadog-agent-cluster-agent | grep -v token) ]]
-    then
-        echo "datadog-agent-cluster-agent does not exist, creating secret"
-
-        kubectl create secret generic datadog-agent-cluster-agent --from-literal token=$DD_CLUSTER_AGENT_AUTH_TOKEN --namespace datadog
-    else
-        echo "datadog-agent-cluster-agent found."
-    fi
 
     # put the dd_api_key and dd_app_key into k8s secrets (if they don't exist)
     if [[ -z $(kubectl get secrets --all-namespaces | grep datadog-secret) ]]
@@ -213,30 +198,23 @@ function command_deploy {
         echo "datadog-secret found."
     fi 
 
-    echo "kubectl -n datadog get secret datadog-secret -o yaml"
-    kubectl -n datadog get secret datadog-secret -o yaml
-    echo "cluster token: $DD_CLUSTER_AGENT_AUTH_TOKEN"
     echo "enable_datadog: $enable_datadog"
 
     # logic to handle the datadog-agent upgrade process
     if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]]
     then
-        echo "*********************"
         echo "installing datadog..."
-        echo "*********************"
         # deploy datadog via helm v3
         helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog-agent \
-            --set datadog.apiKey=datadog-secret \
+            --set datadog.apiKeyExistingSecret=datadog-secret \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog installed"
     elif [[ $(get_helm_command_for_release "datadog" "datadog") == "upgrade" && $enable_datadog == "yes" ]]
     then
-        echo "*********************"
         echo "upgrading datadog..."
-        echo "*********************"
         # upgrade datadog via helm
-        helm upgrade --install --namespace "datadog" \
+        helm upgrade --install --namespace "datadog" -f ./datadog/values.yaml \
             datadog-agent \
             --set datadog.apiKeyExistingSecret=datadog-secret \
             stable/datadog --set targetSystem=linux --version 2.3.6
@@ -248,23 +226,19 @@ function command_deploy {
     # logic for the datadog-cluster-agent
     if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" && $enable_datadog == "yes" ]]
     then
-        echo "*********************"
         echo "installing datadog-cluster-agent"
-        echo "*********************"
-        helm install --namespace "datadog" \
+        helm install --namespace "datadog" -f ./datadog/datadog-values.yaml \
             datadog-cluster-agent \
-            --set datadog.apiKey=datadog-secret \
-            --set datadog.appKey=datadog-secret \
+            --set datadog.apiKeyExistingSecret=datadog-secret \
+            --set datadog.appKeyExistingSecret=datadog-secret \
             --set clusterAgent.enabled=true \
             --set clusterAgent.metricsProvider.enabled=true \
             stable/datadog --set targetSystem=linux --version 2.3.6
             echo "datadog-cluster-agent installed"
     elif [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "upgrade" && $enable_datadog == "yes" ]]
     then
-        echo "*********************"
         echo "upgrading datadog-cluster-agent..."
-        echo "*********************"
-        helm upgrade --namespace "datadog" \
+        helm upgrade --install --namespace "datadog" -f ./datadog/values.yaml \
             datadog-cluster-agent \
             --set datadog.apiKeyExistingSecret=datadog-secret \
             --set datadog.appKeyExistingSecret=datadog-secret \
@@ -277,10 +251,7 @@ function command_deploy {
     fi
 
     # wait for the IP of the datadog pod to become ready
-    # if we don't wait, the vault-helm install could fail when
-    # trying to contact the telemetry endpoint
-    echo "pod details"
-    kubectl -n datadog get po | grep datadog-cluster-agent-cluster-agent | awk '{print $1}'
+    # if we don't wait, the vault-helm install could fail
     while [[ $(kubectl -n datadog get pods $(kubectl -n datadog get po | grep datadog-cluster-agent-cluster-agent | awk '{print $1}') -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]
     do
         echo "waiting for datadog cluster agent pod to become ready..."
@@ -329,9 +300,7 @@ spec:
   dnsNames:
   - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply --validate=false -f -
 
-    echo "*********************"
     echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
-    echo "*********************"
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
             vault ./vault-helm \
@@ -345,6 +314,7 @@ spec:
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
 
     # helm list - show deployments
+    echo "listing all helm deployments:"
     helm list --all-namespaces
 
     echo "helm deployments finished."

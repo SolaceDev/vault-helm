@@ -82,7 +82,7 @@ datadog:
   ## Set logging verbosity, valid log levels are:
   ## trace, debug, info, warn, error, critical, and off
   #
-  logLevel: INFO
+  logLevel: DEBUG
 
   ## @param kubeStateMetricsEnabled - boolean - required
   ## If true, deploys the kube-state-metrics deployment.

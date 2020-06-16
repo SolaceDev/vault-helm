@@ -133,7 +133,7 @@ function command_deploy {
     export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
-    ./helm/helm.sh --command_name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY --datadog_app_key=$DD_APP_KEY --datadog_cluster_key=$DD_CLUSTER_AGENT_AUTH_TOKEN --enable_datadog=$enable_datadog
+    ./helm/helm.sh --command_name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=$DD_API_KEY --datadog_app_key=$DD_APP_KEY --enable_datadog=$enable_datadog
 }
 
 function command_validate {

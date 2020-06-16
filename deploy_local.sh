@@ -154,11 +154,6 @@ then
     echo "*****************************"
 fi
 
-
-# we're using a secure openssl method to generate the auth token for datadog cluster agent (openssl is required to be installed)
-# This is required for datadog-cluster-agent helm upgrades to complete (as per their docs)
-DD_CLUSTER_AGENT_AUTH_TOKEN=$(openssl rand -base64 32 | base64)
-
 image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$(id -un)-vault:latest}
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
 
@@ -173,4 +168,4 @@ echo "building docker container from Dockerfile"
 docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
-docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY -e DD_APP_KEY=$DD_APP_KEY -e DD_CLUSTER_AGENT_AUTH_TOKEN=$DD_CLUSTER_AGENT_AUTH_TOKEN -e enable_datadog=$enable_datadog ${image_tag}
+docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY -e DD_APP_KEY=$DD_APP_KEY -e enable_datadog=$enable_datadog ${image_tag}
