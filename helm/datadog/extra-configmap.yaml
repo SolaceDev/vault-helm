@@ -1,0 +1,19 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: "datadog-maas-config-map"
+  namespace: datadog
+data:
+  vault-config: |-
+    ad_identifiers:
+      - vault
+    init_config:
+    instances:
+      - {"api_url": "http://%%host%%:8200/v1"}
+      no_token: true
+    logs:
+      - type: file
+        path: /vault/vault-audit.log
+        source: vault
+        service: vault-gke

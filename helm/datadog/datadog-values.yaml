@@ -82,7 +82,7 @@ datadog:
   ## Set logging verbosity, valid log levels are:
   ## trace, debug, info, warn, error, critical, and off
   #
-  logLevel: DEBUG
+  logLevel: INFO
 
   ## @param kubeStateMetricsEnabled - boolean - required
   ## If true, deploys the kube-state-metrics deployment.
@@ -283,6 +283,8 @@ datadog:
   #     init_config:
   #     instances:
   #       - kube_state_url: http://%%host%%:8080/metrics
+
+  
 
   ## @param checksd - list of key:value strings - optional
   ## Provide additional custom checks as python code
@@ -994,6 +996,10 @@ clusterChecksRunner:
 
 
 kube-state-metrics:
+  # override the image id as 1.9+ does not work with GKE 1.14
+  image:
+    tag: v1.8.0
+
   rbac:
     ## @param created - boolean - required
     ## If true, create & use RBAC resources
