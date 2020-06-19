@@ -11,6 +11,9 @@ datadog:
   logsConfigContainerCollectAll: true
   apmEnabled: true
   processAgentEnabled: true
+  logs:
+    containerCollectAll: true
+    containerCollectUsingFiles: true
   daemonset:
     containers:
       agent:
@@ -54,10 +57,8 @@ datadog:
         - kube_state_url: http://%%host%%:8080/metrics
           telemetry: true
   resources: {} # configure
-
 clusterAgent:
   enabled: true
-  leaderElection: true
   replicas: 2
   clusterChecks:
     enabled: true
@@ -66,3 +67,19 @@ clusterAgent:
       value: "kubernetescluster:vault-helm"
   priorityClassName: system-cluster-critical
   resources: {} # configure
+  livenessProbe:
+    httpGet:
+      port: 5000
+      path: /metrics
+      scheme: HTTP
+  readinessProbe:
+    httpGet:
+      port: 5000
+      path: /metrics
+      scheme: HTTP
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  

@@ -201,11 +201,6 @@ function command_deploy {
     echo "enable_datadog: $enable_datadog"
     echo "*******************************"
 
-    # Remove datadog from the cluster
-    helm uninstall datadog-agent --namespace datadog || true
-    helm uninstall datadog-cluster-agent --namespace datadog || true
-    sleep 10
-
     # logic to handle the datadog-agent upgrade process
     if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]]
     then
