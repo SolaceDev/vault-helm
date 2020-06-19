@@ -1,11 +1,10 @@
 datadog:
   apiKeyExistingSecret: "datadog-secret"
   appKeyExistingSecret: "datadog-secret"
-  clusterName: vault-helm
   dogstatsdOriginDetection: true
   nonLocalTraffic: true
   collectEvents: true
-  leaderElection: true
+  leaderElection: false
   leaderLeaseDuration: 60
   logsEnabled: true # We use another log collector
   logsConfigContainerCollectAll: true
