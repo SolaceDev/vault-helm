@@ -17,9 +17,6 @@ injector:
   enabled: false
 
 server:
-  extraEnvironmentVars:
-    # Required for TLS
-    VAULT_CACERT: /vault/userconfig/vault-server-tls/ca.crt
   extraVolumes:
     # Required for TLS
     - type: secret
@@ -38,10 +35,10 @@ server:
     enabled: true
     # Since Vault HA is active/standby, replicas do not help with horizontal scaling
     # Issues were encountered configuring the LB to route to the active node, so this is being avoided by using 1 replica for now
-    replicas: 1
+    replicas: 2
     config: |
       api_addr     = "https://{{ .Values.maas.lbAddress }}"
-      cluster_addr = "https://HOST_IP:8201"
+      cluster_addr = "https://POD_IP:8201"
 
       log_level = "trace"
 
@@ -60,11 +57,12 @@ server:
         cluster_address = "[::]:8201"
         tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
         tls_key_file  = "/vault/userconfig/vault-server-tls/tls.key"
-          telemetry {
-          dogstatsd_addr = "{{ .Values.maas.datadogDogstatsdIP }}:8125"
-          disable_hostname = true
-          unauthenticated_metrics_access = true
-          }
+      }
+
+      telemetry {
+        dogstatsd_addr = "{{ .Values.maas.datadogDogstatsdIP }}:8125"
+        disable_hostname = true
+        unauthenticated_metrics_access = true
       }
 
       # Override storage to use GCS instead of Consul
