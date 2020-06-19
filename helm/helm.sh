@@ -201,6 +201,11 @@ function command_deploy {
     echo "enable_datadog: $enable_datadog"
     echo "*******************************"
 
+    # Remove datadog from the cluster
+    helm uninstall datadog-agent --namespace datadog || true
+    helm uninstall datadog-cluster-agent --namespace datadog || true
+    sleep 10
+
     # logic to handle the datadog-agent upgrade process
     if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]]
     then
@@ -275,13 +280,8 @@ function command_deploy {
         echo "command: $(get_helm_command_for_release "datadog" "datadog-agent") not initialized for helm datadog.  We will do nothing in this case"
     fi
 
-    # wait for the IP of the datadog pod to become ready
-    # if we don't wait, the vault-helm install could fail
-    while [[ $(kubectl -n datadog get pods $(kubectl -n datadog get po | grep datadog-cluster-agent-cluster-agent | awk '{print $1}') -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]
-    do
-        echo "waiting for datadog cluster agent pod to become ready..."
-        sleep 1
-    done
+    echo "wait 5 seconds for datadog to be up..."
+    sleep 5
 
     # Run the appropriate Helm command
     helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
