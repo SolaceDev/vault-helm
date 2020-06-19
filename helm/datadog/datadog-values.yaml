@@ -39,7 +39,7 @@ datadog:
         - vault
       init_config:
       instances:
-        - api_url: http://%%host%%:8200/v1
+        - api_url: http://localhost:8200/v1
           detect_leader: true
           tls_verify: false
           no_token: true
