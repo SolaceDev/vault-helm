@@ -35,7 +35,7 @@ server:
     enabled: true
     # Since Vault HA is active/standby, replicas do not help with horizontal scaling
     # Issues were encountered configuring the LB to route to the active node, so this is being avoided by using 1 replica for now
-    replicas: 2
+    replicas: 1
     config: |
       api_addr     = "https://{{ .Values.maas.lbAddress }}"
       cluster_addr = "https://POD_IP:8201"

@@ -1,16 +1,17 @@
 datadog:
   apiKeyExistingSecret: "datadog-secret"
   appKeyExistingSecret: "datadog-secret"
-  dogstatsdOriginDetection: true
   nonLocalTraffic: true
   collectEvents: true
   leaderElection: false
   leaderLeaseDuration: 60
-  logsEnabled: true # We use another log collector
-  logsConfigContainerCollectAll: true
-  apmEnabled: true
+  apmEnabled: false
   processAgentEnabled: true
+  dogstatsd:
+    originDetection: false
+    nonLocalTraffic: true
   logs:
+    enabled: true
     containerCollectAll: true
     containerCollectUsingFiles: true
   daemonset:
