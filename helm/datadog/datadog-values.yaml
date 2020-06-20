@@ -62,10 +62,6 @@ clusterAgent:
   replicas: 2
   clusterChecks:
     enabled: true
-  env:
-    - name: DD_CLUSTER_CHECKS_EXTRA_TAGS
-      value: "kubernetescluster:vault-helm"
-  priorityClassName: system-cluster-critical
   resources: {} # configure
   livenessProbe:
     httpGet:
