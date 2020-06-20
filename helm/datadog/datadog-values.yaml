@@ -40,7 +40,7 @@ datadog:
       init_config:
       instances:
         - api_url: http://%%host%%:8200/v1
-          detect_leader: true
+          detect_leader: false
           tls_verify: false
           no_token: true
       logs:
