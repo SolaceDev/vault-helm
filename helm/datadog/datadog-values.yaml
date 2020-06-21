@@ -8,6 +8,7 @@ datadog:
   apmEnabled: false
   processAgentEnabled: true
   dogstatsd:
+    port: 8125
     originDetection: false
     nonLocalTraffic: true
   logs:
