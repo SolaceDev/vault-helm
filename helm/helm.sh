@@ -209,6 +209,7 @@ function command_deploy {
         helm install --namespace "datadog" --values ./datadog/datadog-values.yaml \
             datadog-agent \
             --set datadog.apiKey=datadog-secret \
+            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.volumeattachments=false \
@@ -224,6 +225,7 @@ function command_deploy {
         helm upgrade --install --namespace "datadog" --values ./upgrade.yaml --values ./datadog/datadog-values.yaml \
             datadog-agent \
             --set datadog.apiKeyExistingSecret=datadog-secret \
+            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
@@ -244,6 +246,7 @@ function command_deploy {
             datadog-cluster-agent \
             --set datadog.apiKey=datadog-secret \
             --set datadog.appKey=datadog-secret \
+            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
@@ -261,6 +264,7 @@ function command_deploy {
             datadog-cluster-agent \
             --set datadog.apiKeyExistingSecret=datadog-secret \
             --set datadog.appKeyExistingSecret=datadog-secret \
+            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
