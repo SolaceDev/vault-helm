@@ -185,6 +185,62 @@ function command_deploy {
     # Make sure Helm repos are up to date.
     helm repo update
 
+    # Run the appropriate Helm command
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
+
+    # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
+    while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
+        sleep 1
+    done
+
+    # Create a ClusterIssuer resource
+    echo "apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: ${cluster_issuer_name}
+spec:
+  acme:
+    # certificates, and issues related to your account.
+    email: nobody@solace.com
+    server: ${cluster_issuer_server}
+    privateKeySecretRef:
+      name: solace-issuer-account-key
+    solvers:
+    - dns01:
+        clouddns:
+            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
+
+    # Create the Vault cluster namespace if it doesn't exist
+    create_namespace_if_missing $HELM_cluster_id
+
+    echo "apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: vault-certificate
+  namespace: ${HELM_cluster_id}
+spec:
+  secretName: vault-server-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: ${cluster_issuer_name}
+  commonName: ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
+  dnsNames:
+  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply --validate=false -f -
+
+    echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
+    # Run the appropriate Helm command for the Vault release
+    helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
+            vault ./vault-helm \
+            --namespace $HELM_cluster_id \
+            --values ./maas-values.yaml \
+            --values ./upgrade.yaml \
+            --set maas.gcpProject=$HELM_project_id \
+            --set maas.lbAddress=$HELM_lb_address \
+            --set maas.kmsProject=$HELM_project_id \
+            --set maas.kmsKeyRing=$HELM_project_id \
+            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
+            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
+
     echo "creating namespace datadog, if it does not exist..."
     # create a separate namespace to run datadog in
     create_namespace_if_missing datadog
@@ -281,68 +337,11 @@ function command_deploy {
 
     echo "wait 5 seconds for datadog to be up..."
     sleep 5
-
-    # Run the appropriate Helm command
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
-
-    # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
-    while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
-        sleep 1
-    done
-
-    # Create a ClusterIssuer resource
-    echo "apiVersion: cert-manager.io/v1alpha2
-kind: ClusterIssuer
-metadata:
-  name: ${cluster_issuer_name}
-spec:
-  acme:
-    # certificates, and issues related to your account.
-    email: nobody@solace.com
-    server: ${cluster_issuer_server}
-    privateKeySecretRef:
-      name: solace-issuer-account-key
-    solvers:
-    - dns01:
-        clouddns:
-            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
-
-    # Create the Vault cluster namespace if it doesn't exist
-    create_namespace_if_missing $HELM_cluster_id
-
-    echo "apiVersion: cert-manager.io/v1alpha2
-kind: Certificate
-metadata:
-  name: vault-certificate
-  namespace: ${HELM_cluster_id}
-spec:
-  secretName: vault-server-tls
-  issuerRef:
-    kind: ClusterIssuer
-    name: ${cluster_issuer_name}
-  commonName: ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
-  dnsNames:
-  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply --validate=false -f -
-
-    echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
-    # Run the appropriate Helm command for the Vault release
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
-            vault ./vault-helm \
-            --namespace $HELM_cluster_id \
-            --values ./maas-values.yaml \
-            --values ./upgrade.yaml \
-            --set maas.gcpProject=$HELM_project_id \
-            --set maas.lbAddress=$HELM_lb_address \
-            --set maas.kmsProject=$HELM_project_id \
-            --set maas.kmsKeyRing=$HELM_project_id \
-            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
-            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
+    echo "helm deployments finished."
 
     # helm list - show deployments
     echo "listing all helm deployments:"
     helm list --all-namespaces
-
-    echo "helm deployments finished."
     
 }
 

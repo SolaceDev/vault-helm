@@ -57,6 +57,9 @@ server:
         cluster_address = "[::]:8201"
         tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
         tls_key_file  = "/vault/userconfig/vault-server-tls/tls.key"
+        telemetry {
+          unauthenticated_metrics_access = true
+        }
       }
 
       telemetry {

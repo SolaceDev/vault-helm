@@ -45,7 +45,7 @@ datadog:
         - api_url: https://{{ .Values.maas.clusterFQDN }}:8200/v1
           detect_leader: false
           tls_verify: false
-          tls_ignore_warning: false
+          tls_ignore_warning: true
           no_token: true
       logs:
         - type: file
