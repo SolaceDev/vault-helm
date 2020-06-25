@@ -28,7 +28,7 @@ deleted.
 
 ## Pre-install setup
 This repository has sub-modules enabled for cert-manager and vault-helm.  When
-cloning this erpo please ensure you use the recursive option:
+cloning this repo please ensure you use the recursive option:
 `git clone --recursive https://github.com/SolaceDev/maas-vault-gcp-cluster.git`
 
 You will need to set up a new github personal access token.  Refer to github
@@ -50,10 +50,7 @@ Finally, build the GCP credentials file:
 You should now be able to run gcloud and vault commands.
 
 ## Datadog feature flag
-To enable datadog deployment for kubernetes/vault, modify deploy_local.sh:
-
-# This is the main feature flag for enabling datadog deployment
-enable_datadog="yes"
+To enable datadog deployment for kubernetes/vault use "--enable_datadog=yes"
 
 ### Reference Environments
 This project is designed to easily deploy ephemeral instances for development
