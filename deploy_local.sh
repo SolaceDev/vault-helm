@@ -50,11 +50,6 @@ done
 # required:  cluster_id, command_name
 # optional:  region, project_id (default set above)
 # optional:  enable_datadog - if set, either a github token or api/app key are required
-# logic:
-# if any of cluster_id, project_id, region, command_name are missing, exit
-# if (datadog is enabled and github token is null) OR (datadog is enabled and (api key or app key are null)), exit
-#
-# fix  || ([ $enable_datadog == "yes" ] && [ -z "$GITHUB_TOKEN" ]) || ([ $enable_datadog == "yes" ] || [ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ])
 if [ -z "$CLUSTER_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$REGION" ] || [ -z "$command_name" ] 
 then
     echo "deploy_local.sh error:"
@@ -108,6 +103,7 @@ then
   echo "datadog has been enabled."
   echo "*****************************"
 
+  # test for inclusion of dd keys
   if [ "$command_name" == "deploy" ] && ([ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ])
   then
     echo "you have enabled datadog but no datadog api or app keys have been provided.  We will attempt to get from vault..."
