@@ -67,8 +67,12 @@ fi
 export HELM_cluster_id
 
 cluster_issuer_name=${HELM_CLUSTER_ISSUER_NAME:-"letsencrypt"}
-#cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
-cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-staging-v02.api.letsencrypt.org/directory"}
+
+# Use this server for testing or you could get rate-limited:
+#cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-staging-v02.api.letsencrypt.org/directory"}
+
+# Use this server for production:
+cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
 
 gcloud auth activate-service-account --key-file=${HOME}/.config/gcloud/application_default_credentials.json
 
