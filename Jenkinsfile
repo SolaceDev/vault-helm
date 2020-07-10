@@ -68,7 +68,7 @@ pipeline {
       steps {
         container('docker') {
           script {
-            sh "./deploy_local.sh validate ${VAULT_NAME}"
+            sh "./deploy_local.sh --command_name=validate --cluster_id=${VAULT_NAME}"
           }
         }
       }
@@ -92,10 +92,10 @@ pipeline {
         container('docker') {
           script {
             try {
-              sh "./deploy_local.sh vaultinit ${VAULT_NAME} 60"
-              sh "./deploy_local.sh vault ${VAULT_NAME} secrets enable -version=2 -path=secrets kv"
-              sh "./deploy_local.sh vault ${VAULT_NAME} kv put secrets/my-secret my-value=${GIT_COMMIT_SHORT}"
-              sh "./deploy_local.sh vault ${VAULT_NAME} kv get -field=my-value  secrets/my-secret"
+              sh "./deploy_local.sh --command_name=vaultinit --cluster_id=${VAULT_NAME} 120 120"
+              sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no secrets enable -version=2 -path=secrets kv"
+              sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no kv put secrets/my-secret my-value=${GIT_COMMIT_SHORT}"
+              sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no kv get -field=my-value  secrets/my-secret"
             } catch(err) {
               currentBuild.result = 'FAILURE'
               echo "Failed: ${err}"
@@ -109,7 +109,7 @@ pipeline {
         container('docker') {
           script {
             try {
-              sh "./deploy_local.sh deploy ${VAULT_NAME}"
+              sh "./deploy_local.sh --command_name=deploy --cluster_id=${VAULT_NAME}"
             } catch(err) {
               currentBuild.result = 'FAILURE'
               echo "Failed: ${err}"
@@ -123,7 +123,7 @@ pipeline {
         container('docker') {
           script {
             try {
-              sh "./deploy_local.sh vault ${VAULT_NAME} kv get -field=my-value  secrets/my-secret"
+              sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no kv get -field=my-value  secrets/my-secret"
             } catch(err) {
               currentBuild.result = 'FAILURE'
               echo "Failed: ${err}"
@@ -138,7 +138,7 @@ pipeline {
           script {
             // Uncomment when debugging failed builds
             // input message: "Proceed with uninstallation?"
-            sh "./deploy_local.sh destroy ${VAULT_NAME}"
+            sh "./deploy_local.sh --command_name=destroy --cluster_id=${VAULT_NAME}"
           }
         }
       }

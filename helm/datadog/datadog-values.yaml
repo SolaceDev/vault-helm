@@ -1,0 +1,83 @@
+maas:
+  clusterFQDN: "default-clustername.nowhere.com"
+datadog:
+  apiKeyExistingSecret: "datadog-secret"
+  appKeyExistingSecret: "datadog-secret"
+  nonLocalTraffic: true
+  collectEvents: true
+  leaderElection: false
+  leaderLeaseDuration: 60
+  apmEnabled: false
+  processAgentEnabled: true
+  dogstatsd:
+    port: 8125
+    originDetection: false
+    nonLocalTraffic: true
+  logs:
+    enabled: true
+    containerCollectAll: true
+    containerCollectUsingFiles: true
+  daemonset:
+    containers:
+      agent:
+        resources: {}
+      processAgent:
+        resources: {}
+      traceAgent:
+        resources: {}
+    useHostPort: true
+  volumes:
+    - name: empty-dir
+      emptyDir: {}
+  volumeMounts:
+    - name: empty-dir
+      mountPath: /etc/datadog-agent/conf.d/kubernetes_state.d
+      readOnly: true
+    - name: empty-dir2
+      mountPath: /etc/datadog-agent/conf.d/vault.d
+      readOnly: true
+  confd:
+    vault.yaml: |-
+      ad_identifiers:
+        - vault
+      init_config:
+      instances:
+        - api_url: https://{{ .Values.maas.clusterFQDN }}:8200/v1
+          detect_leader: false
+          tls_verify: false
+          tls_ignore_warning: true
+          no_token: true
+      logs:
+        - type: file
+          path: /vault/vault-audit.log
+          source: vault
+          service: vault-gke
+    kubernetes_state.yaml: |-
+      ad_identifiers:
+        - kube-state-metrics
+      init_config:
+      instances:
+        - kube_state_url: http://%%host%%:8080/metrics
+          telemetry: true
+  resources: {}
+clusterAgent:
+  enabled: true
+  replicas: 1
+  clusterChecks:
+    enabled: true
+  resources: {}
+  livenessProbe:
+    httpGet:
+      port: 5000
+      path: /metrics
+      scheme: HTTP
+  readinessProbe:
+    httpGet:
+      port: 5000
+      path: /metrics
+      scheme: HTTP
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
