@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e${DEBUG+x}o pipefail
+set -eu${DEBUG+x}o pipefail
 
 # Make sure to switch the current directory to the one where this script is located.
 cd "$( dirname "${BASH_SOURCE[0]}" )"
@@ -68,10 +68,7 @@ export HELM_cluster_id
 
 cluster_issuer_name=${HELM_CLUSTER_ISSUER_NAME:-"letsencrypt"}
 
-# Use this server for testing or you could get rate-limited:
-#cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-staging-v02.api.letsencrypt.org/directory"}
-
-# Use this server for production:
+# You can set HELM_CLUSTER_ISSUER_SERVER to a custom value here
 cluster_issuer_server=${HELM_CLUSTER_ISSUER_SERVER:-"https://acme-v02.api.letsencrypt.org/directory"}
 
 gcloud auth activate-service-account --key-file=${HOME}/.config/gcloud/application_default_credentials.json
@@ -339,8 +336,6 @@ spec:
         echo "command: $(get_helm_command_for_release "datadog" "datadog-agent") not initialized for helm datadog.  We will do nothing in this case"
     fi
 
-    echo "wait 5 seconds for datadog to be up..."
-    sleep 5
     echo "helm deployments finished."
 
     # helm list - show deployments

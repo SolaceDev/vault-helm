@@ -1,16 +1,16 @@
 #!/bin/bash
-set -e${DEBUG+x}o pipefail
+set -eu${DEBUG+x}o pipefail
 
-if [[ $# == 0 ]]; then
+if (( $# == 0 )); then
     set -- help
 fi
 
 # Make sure a recognized command was provided.
-case $command_name in
+case ${command_name:-""} in
   deploy|destroy|validate|help|vault|vaultinit)
     ;;
   *)
-    echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
+    echo "ERROR: Unrecognized deploy_local.sh command: ${command_name:-""}"
     echo ""
     echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
     echo ""
@@ -180,7 +180,6 @@ function command_vaultinit {
 
 function command_vault {
   export HELM_cluster_id=$CLUSTER_ID
-  shift
 
   export VAULT_ADDR="https://${HELM_cluster_id}.${HELM_project_id:-"maas-vault-dev"}.mymaas.net:8200"
 

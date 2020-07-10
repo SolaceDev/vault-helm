@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e${DEBUG+x}o pipefail
+set -eu${DEBUG+x}o pipefail
 
 # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
 export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
@@ -43,6 +43,9 @@ do
     -enable_datadog=*|--enable_datadog=*)
     enable_datadog="${i#*=}"
     shift
+    ;;
+    ?*)
+    extra_vars="${extra_vars:-""} ${i#*}"
     ;;
   esac
 done
@@ -96,7 +99,7 @@ case $command_name in
     ;;
 esac
 
-if [[ $enable_datadog == "yes" ]]
+if [[ "${enable_datadog:-""}" == "yes" ]]
 then
   # Main feature flag for enable/disable datadog
   echo "*****************************"
@@ -104,7 +107,7 @@ then
   echo "*****************************"
 
   # test for inclusion of dd keys
-  if [ "$command_name" == "deploy" ] && ([ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ])
+  if [ "$command_name" == "deploy" ] && ([ -z "${DD_API_KEY:-""}" ] || [ -z "${DD_APP_KEY:-""}" ])
   then
     echo "you have enabled datadog but no datadog api or app keys have been provided.  We will attempt to get from vault..."
     echo ""
@@ -164,4 +167,4 @@ echo "building docker container from Dockerfile"
 docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
-docker run --rm ${docker_args} -e command_name=$command_name -e CLUSTER_ID=$CLUSTER_ID -e PROJECT_ID=$PROJECT_ID -e REGION=$REGION -e DD_API_KEY=$DD_API_KEY -e DD_APP_KEY=$DD_APP_KEY -e enable_datadog=$enable_datadog ${image_tag} $@
+docker run --rm ${docker_args} -e CLUSTER_ID="$CLUSTER_ID" -e PROJECT_ID="$PROJECT_ID" -e REGION="$REGION" -e DD_API_KEY="${DD_API_KEY:-""}" -e DD_APP_KEY="${DD_APP_KEY:-""}" -e enable_datadog="${enable_datadog:-""}" -e command_name="$command_name" "${image_tag}" "${extra_vars:-""}"
