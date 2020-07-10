@@ -92,7 +92,7 @@ pipeline {
         container('docker') {
           script {
             try {
-              sh "./deploy_local.sh --command_name=vaultinit --cluster_id=${VAULT_NAME} 60"
+              sh "./deploy_local.sh --command_name=vaultinit --cluster_id=${VAULT_NAME} 120"
               sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no secrets enable -version=2 -path=secrets kv"
               sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no kv put secrets/my-secret my-value=${GIT_COMMIT_SHORT}"
               sh "./deploy_local.sh --command_name=vault --cluster_id=${VAULT_NAME} --enable_datadog=no kv get -field=my-value  secrets/my-secret"
