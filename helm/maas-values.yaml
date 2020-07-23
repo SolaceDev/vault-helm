@@ -40,7 +40,7 @@ server:
       api_addr     = "https://{{ .Values.maas.lbAddress }}"
       cluster_addr = "https://POD_IP:8201"
 
-      log_level = "trace"
+      log_level = "warn"
 
       ui = true
 
@@ -63,9 +63,8 @@ server:
       }
 
       telemetry {
-        dogstatsd_addr = "{{ .Values.maas.datadogDogstatsdIP }}:8125"
+        dogstatsd_addr = "HOST_IP:8125"
         disable_hostname = true
-        unauthenticated_metrics_access = true
       }
 
       # Override storage to use GCS instead of Consul

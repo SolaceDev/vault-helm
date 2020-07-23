@@ -168,10 +168,14 @@ function command_deploy {
     export HELM_project_id
     export HELM_lb_address
 
+    if [[ ${HELM_project_id} == "maas-vault-prod" ]]; then
+        CERT_MANAGER_SUFFIX=-legacy
+    fi
+
     # Install the cert-manager CRDs
     kubectl apply \
             --validate=false \
-            -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager-legacy.crds.yaml
+            -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager${CERT_MANAGER_SUFFIX:-}.crds.yaml
 
     # Create the cert-manager namespace if it doesn't exist
     create_namespace_if_missing "cert-manager"
