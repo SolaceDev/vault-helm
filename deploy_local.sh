@@ -126,7 +126,7 @@ then
     # log into vault to grab the keys
     echo "logging into vault to check for keys at $vault_path"
     echo ""
-    #vault login -method=github token=${GITHUB_TOKEN}
+    vault login -method=github token=${GITHUB_TOKEN}
     echo ""
 
     # retrieve the keys from vault
