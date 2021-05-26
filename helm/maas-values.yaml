@@ -11,7 +11,6 @@ maas:
 global:
   # Enable TLS
   tlsDisable: false
-
 # Disabling injector
 injector:
   enabled: false
@@ -19,6 +18,7 @@ injector:
 server:
   image:
     pullPolicy: Always
+  fsGroup: 0
   extraVolumes:
     # Required for TLS
     - type: secret
@@ -75,7 +75,7 @@ server:
         bucket     = "{{ .Values.maas.bucketName }}"
         ha_enabled = "true"
       }
-  logrotate: 
+  logrotate:
     enabled: true
     config:
       logRotateConf: |-
@@ -101,7 +101,7 @@ server:
 
   extraContainers:
     - name: logrotate
-      image: gcr.io/maas-vault-prod/maas-vault-logrotate
+      image: gcr.io/maas-vault-dev/maas-vault-logrotate
       volumeMounts:
       - mountPath: /etc/logrotate.conf
         name: vault-logrotate-config
@@ -113,7 +113,7 @@ server:
       - name: TINI_SUBREAPER # tini won't be PID 1 due to shareProcessNamespace
         value: "100"
     - name: datadog-agent
-      image: gcr.io/maas-vault-prod/datadog-agent:7
+      image: gcr.io/maas-vault-dev/datadog-agent:7
       securityContext:
         runAsGroup: 0
       ports:
@@ -139,7 +139,7 @@ server:
         mountPath: /vault/audit
       env:
         - name: DD_HOSTNAME
-          valueFrom: 
+          valueFrom:
             fieldRef:
               fieldPath: metadata.name
         - name: DD_API_KEY

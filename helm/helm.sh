@@ -247,7 +247,7 @@ spec:
                            --from-literal api-key=$DD_API_KEY \
                            --namespace  $HELM_cluster_id
     else
-        echo "Datadog API key secret for Datadog agent side car container to vault already exists."
+        echo "Secret for datadgo sidecar container for vault already exists."
     fi
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
