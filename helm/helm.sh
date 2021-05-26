@@ -236,12 +236,12 @@ spec:
     # Datadog agent is running as a sidecar in the vault continer
     if [[ -z $(kubectl get secrets --namespace  $HELM_cluster_id | grep datadog-vault-secret) ]]
     then
-        echo "Creating a secret for sidecar container for vault..."
+        echo "Creating a Datadog API key secret for Datadog agent side car container to vault..."
         kubectl create secret generic datadog-vault-secret \
                            --from-literal api-key=$DD_API_KEY \
                            --namespace  $HELM_cluster_id
     else
-        echo "Secret for datadgo sidecar container for vault already exists."
+        echo "Datadog API key secret for Datadog agent side car container to vault already exists."
     fi 
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
