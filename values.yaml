@@ -92,7 +92,6 @@ server:
   #   limits:
   #     memory: 256Mi
   #     cpu: 250m
-
   # Ingress allows ingress services to be created to allow external access
   # from Kubernetes to access Vault pods.
   ingress:
@@ -345,6 +344,8 @@ server:
   # Definition of the serviceAccount used to run Vault.
   serviceAccount:
     annotations: {}
+  # A boolean flag to setup logrotate as a side car continer
+  logrotate: null
 
 # Vault UI
 ui:
