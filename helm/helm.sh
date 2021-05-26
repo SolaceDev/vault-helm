@@ -60,7 +60,7 @@ then
     echo ""
     echo "This script is normally called via deploy.sh and is not normally called directly from the command line."
     echo ""
-      
+
     exit 1
 fi
 
@@ -238,6 +238,17 @@ spec:
   - ${certificate_dns_name}" | kubectl apply --validate=false -f -
 
     echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
+    # Create a datadog seceret in $HELM_cluster_id for audit log shipment to datadog -
+    # Datadog agent is running as a sidecar in the vault continer
+    if [[ -z $(kubectl get secrets --namespace  $HELM_cluster_id | grep datadog-vault-secret) ]]
+    then
+        echo "Creating a secret for sidecar container for vault..."
+        kubectl create secret generic datadog-vault-secret \
+                           --from-literal api-key=$DD_API_KEY \
+                           --namespace  $HELM_cluster_id
+    else
+        echo "Secret for datadgo sidecar container for vault already exists."
+    fi
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
             vault ./vault-helm \
@@ -303,7 +314,7 @@ spec:
     else
         echo "command: $(get_helm_command_for_release "datadog" "datadog-agent") not initialized for helm datadog.  We will do nothing in this case."
     fi
-    
+
       # logic for the datadog-cluster-agent
     if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" && $enable_datadog == "yes" ]]
     then
@@ -350,7 +361,7 @@ spec:
     # helm list - show deployments
     echo "listing all helm deployments:"
     helm list --all-namespaces
-    
+
 }
 
 #
