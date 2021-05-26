@@ -91,7 +91,6 @@ server:
   #   limits:
   #     memory: 256Mi
   #     cpu: 250m
-
   # Ingress allows ingress services to be created to allow external access
   # from Kubernetes to access Vault pods.
   ingress:
@@ -159,6 +158,10 @@ server:
   # to Vault in the path `/vault/userconfig/<name>/`. The value below is
   # an array of objects, examples are shown below.
   extraVolumes: []
+    # - type: secret (or "configMap")
+    #   name: my-secret
+    #   path: null # default is `/vault/userconfig`
+
   # Affinity Settings
   # Commenting out or setting as empty the affinity variable, will allow
   # deployment to single node services such as Minikube
