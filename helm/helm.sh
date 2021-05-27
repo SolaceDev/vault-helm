@@ -234,7 +234,7 @@ spec:
     echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
     # Create a datadog seceret in $HELM_cluster_id for audit log shipment to datadog -
     # Datadog agent is running as a sidecar in the vault continer
-    if [[ -z $(kubectl get secrets --namespace  $HELM_cluster_id | grep datadog-vault-secret) ]]
+    if [[ -z $(kubectl get secrets datadog-vault-secret --namespace  $HELM_cluster_id ) ]]
     then
         echo "Creating a Datadog API key secret for Datadog agent side car container to vault..."
         kubectl create secret generic datadog-vault-secret \
