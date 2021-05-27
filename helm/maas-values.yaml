@@ -87,7 +87,8 @@ server:
               compress
               postrotate
                   pkill -HUP -f "vault server"
-                  echo  "`date`: Audit log rotated  -  SIGHUP to vault exit code was $?" > /vault/audit/last-rotate-status
+                  status=$?
+                  echo  "`date`: Audit log rotated  -  SIGHUP to vault exit code was $status" > /vault/audit/last-rotate-status
               endscript
           }
     datadogsidecar:
