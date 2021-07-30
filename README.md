@@ -37,6 +37,8 @@ documentation to perform this action.  We will require `read:org, repo` permissi
 
 Access to the GCP project maas-vault-dev is required (email invite).
 
+The remaining steps of this section are automated in the autologin.sh script.
+
 Log into gcloud:  `gcloud auth application-default login`
 (this will open a browser window on Mac)
 
