@@ -4,10 +4,10 @@
 
 gcloud auth login
 
-export VAULT_ADDR=http://vault.k8s.mymaas.net
+export VAULT_ADDR=http://vault.maas-vault-prod.solace.cloud:8200
 
 vault login -method=github token=${GITHUB_TOKEN}
 
-vault read -field=private_key_data gcp/key/maas-vault-gcp-cluster-maas-vault-dev | base64 -D > ~/.config/gcloud/application_default_credentials.json
+vault read -field=private_key_data gcp/key/vault-gcp-cluster-dev | base64 -D > ~/.config/gcloud/application_default_credentials.json
 
 echo "end of script"
