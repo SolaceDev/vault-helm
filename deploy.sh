@@ -55,7 +55,7 @@ function command_help {
     echo "      us-east1 is used."
     echo ""
     echo "      The datadog-api-key is optional.  If it is omitted, the default value"
-    echo "      will be pulled from vault.maas-vault-prod.mymaas.net:8200"
+    echo "      will be pulled from vault.maas-vault-prod.solace.cloud:8200"
     echo ""
     echo "      example:  ./deploy.sh --command_name=deploy --cluster_id=maas-dev --project_id=maas-vault-dev --region=us-east1 \\"
     echo "                --datadog-api-key=abcde1234556677889 --datadog-app-key=zzxxxccv1234556677889"
@@ -162,7 +162,12 @@ function command_vaultinit {
   retry_interval=${2:-5}
   max_retries=${3:-30}
 
-  export VAULT_ADDR="https://${HELM_cluster_id}.${HELM_project_id:-"maas-vault-dev"}.mymaas.net:8200"
+  domain_name=${HELM_project_id:-"maas-vault-dev"}.mymaas.net
+  if [[ ${HELM_project_id:-} == "maas-vault-prod" ]]; then
+    domain_name=maas-vault-prod.solace.cloud
+  fi
+
+  export VAULT_ADDR="https://${HELM_cluster_id}.${domain_name}:8200"
 
   while vault status; [ $? -eq 1 ]; do
     retries=$((retries+1))
@@ -180,8 +185,13 @@ function command_vaultinit {
 
 function command_vault {
   export HELM_cluster_id=$CLUSTER_ID
+  
+  domain_name=${HELM_project_id:-"maas-vault-dev"}.mymaas.net
+  if [[ ${HELM_project_id:-} == "maas-vault-prod" ]]; then
+    domain_name=maas-vault-prod.solace.cloud
+  fi
 
-  export VAULT_ADDR="https://${HELM_cluster_id}.${HELM_project_id:-"maas-vault-dev"}.mymaas.net:8200"
+  export VAULT_ADDR="https://${HELM_cluster_id}.${domain_name}:8200"
 
   echo "Running vault $@"
   vault $@
