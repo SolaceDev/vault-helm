@@ -15,7 +15,7 @@ ENV GCLOUD_VERSION=288.0.0
 RUN curl -sSL https://sdk.cloud.google.com | bash
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 
-ENV TERRAFORM_VERSION="0.12.23"
+ENV TERRAFORM_VERSION="0.12.24"
 RUN cd /tmp && \
     wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/bin && \
