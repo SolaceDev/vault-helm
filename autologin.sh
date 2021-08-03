@@ -4,7 +4,7 @@
 
 gcloud auth login
 
-export VAULT_ADDR=http://vault.maas-vault-prod.solace.cloud:8200
+export VAULT_ADDR=https://vault.maas-vault-prod.solace.cloud:8200
 
 vault login -method=github token=${GITHUB_TOKEN}
 
