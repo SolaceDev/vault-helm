@@ -40,12 +40,12 @@ Access to the GCP project maas-vault-dev is required (email invite).
 Log into gcloud:  `gcloud auth application-default login`
 (this will open a browser window on Mac)
 
-Export the vault env var:  `export VAULT_ADDR=http://vault.k8s.mymaas.net`
+Export the vault env var:  `export VAULT_ADDR=https://vault.maas-vault-prod.solace.cloud:8200`
 
 Log into vault using previously-created access token: `vault login -method=github token=${GITHUB_TOKEN}`
 
 Finally, build the GCP credentials file:
-`vault read -field=private_key_data gcp/key/maas-vault-gcp-cluster-maas-vault-dev | base64 -D > ~/.config/gcloud/application_default_credentials.json`
+`vault read -field=private_key_data gcp/key/vault-gcp-cluster-dev | base64 -D > ~/.config/gcloud/application_default_credentials.json`
 
 You should now be able to run gcloud and vault commands.
 

@@ -185,7 +185,7 @@ function command_deploy {
 
     # Add the helm kubernetes repo
     # Currently required for datago-7454: datadog vault implementation - stable/datadog
-    helm repo add stable https://kubernetes-charts.storage.googleapis.com
+    helm repo add stable https://charts.helm.sh/stable
 
     # Make sure Helm repos are up to date.
     helm repo update
