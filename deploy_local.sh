@@ -2,7 +2,7 @@
 set -eu${DEBUG+x}o pipefail
 
 # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.mymaas.net:8200
-export VAULT_ADDR=https://vault.maas-vault-prod.mymaas.net:8200
+export VAULT_ADDR=https://vault.maas-vault-prod.solace.cloud:8200
 
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID="maas-vault-dev"
