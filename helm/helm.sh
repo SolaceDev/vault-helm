@@ -198,6 +198,11 @@ function command_deploy {
         sleep 1
     done
 
+    certificate_dns_name=${HELM_cluster_id}.${HELM_project_id}.mymaas.net
+    if [[ ${HELM_project_id} == "maas-vault-prod" ]]; then
+        certificate_dns_name=${HELM_cluster_id}.maas-vault-prod.solace.cloud
+    fi
+
     # Create a ClusterIssuer resource
     echo "apiVersion: cert-manager.io/v1alpha2
 kind: ClusterIssuer
@@ -228,9 +233,9 @@ spec:
   issuerRef:
     kind: ClusterIssuer
     name: ${cluster_issuer_name}
-  commonName: ${HELM_cluster_id}.${HELM_project_id}.mymaas.net
+  commonName: ${certificate_dns_name}
   dnsNames:
-  - ${HELM_cluster_id}.${HELM_project_id}.mymaas.net" | kubectl apply --validate=false -f -
+  - ${certificate_dns_name}" | kubectl apply --validate=false -f -
 
     echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
     # Run the appropriate Helm command for the Vault release
@@ -270,7 +275,7 @@ spec:
         helm install --namespace "datadog" --values ./datadog/datadog-values.yaml \
             datadog-agent \
             --set datadog.apiKey=datadog-secret \
-            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
+            --set maas.clusterFQDN=${certificate_dns_name} \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.volumeattachments=false \
@@ -286,7 +291,7 @@ spec:
         helm upgrade --install --namespace "datadog" --values ./upgrade.yaml --values ./datadog/datadog-values.yaml \
             datadog-agent \
             --set datadog.apiKeyExistingSecret=datadog-secret \
-            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
+            --set maas.clusterFQDN=${certificate_dns_name} \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
@@ -307,7 +312,7 @@ spec:
             datadog-cluster-agent \
             --set datadog.apiKey=datadog-secret \
             --set datadog.appKey=datadog-secret \
-            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
+            --set maas.clusterFQDN=${certificate_dns_name} \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
@@ -325,7 +330,7 @@ spec:
             datadog-cluster-agent \
             --set datadog.apiKeyExistingSecret=datadog-secret \
             --set datadog.appKeyExistingSecret=datadog-secret \
-            --set maas.clusterFQDN=${HELM_cluster_id}.${HELM_project_id}.mymaas.net \
+            --set maas.clusterFQDN=${certificate_dns_name} \
             --set kube-state-metrics.image.tag=v1.8.0 \
             --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
             --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
