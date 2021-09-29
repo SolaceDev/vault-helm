@@ -167,4 +167,4 @@ echo "building docker container from Dockerfile"
 docker build . -q --build-arg BASE_IMAGE=${base_image_tag} -t ${image_tag}
 
 # rw of gcloud config required for kubectl configuration
-docker run --rm ${docker_args} -e DEBUG -e CLUSTER_ID="$CLUSTER_ID" -e PROJECT_ID="$PROJECT_ID" -e REGION="$REGION" -e DD_API_KEY="${DD_API_KEY:-""}" -e DD_APP_KEY="${DD_APP_KEY:-""}" -e enable_datadog="${enable_datadog:-""}" -e command_name="$command_name" "${image_tag}" "${extra_vars:-""}"
+docker run --rm ${docker_args} -e CLUSTER_ID="$CLUSTER_ID" -e PROJECT_ID="$PROJECT_ID" -e REGION="$REGION" -e DD_API_KEY="${DD_API_KEY:-""}" -e DD_APP_KEY="${DD_APP_KEY:-""}" -e enable_datadog="${enable_datadog:-""}" -e command_name="$command_name" "${image_tag}" "${extra_vars:-""}"
