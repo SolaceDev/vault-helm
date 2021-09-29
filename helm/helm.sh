@@ -60,7 +60,7 @@ then
     echo ""
     echo "This script is normally called via deploy.sh and is not normally called directly from the command line."
     echo ""
-      
+
     exit 1
 fi
 
@@ -168,14 +168,15 @@ function command_deploy {
     export HELM_project_id
     export HELM_lb_address
 
-    if [[ ${HELM_project_id} == "maas-vault-prod" ]]; then
-        CERT_MANAGER_SUFFIX=-legacy
-    fi
+    # if [[ ${HELM_project_id} == "maas-vault-prod" ]]; then
+    #     CERT_MANAGER_SUFFIX=-legacy
+    # fi
 
     # Install the cert-manager CRDs
-    kubectl apply \
-            --validate=false \
-            -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager${CERT_MANAGER_SUFFIX:-}.crds.yaml
+    # kubectl apply \
+    #         --validate=false \
+    #         -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager${CERT_MANAGER_SUFFIX:-}.crds.yaml \
+    #         -n cert-manager
 
     # Create the cert-manager namespace if it doesn't exist
     create_namespace_if_missing "cert-manager"
@@ -191,7 +192,7 @@ function command_deploy {
     helm repo update
 
     # Run the appropriate Helm command
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1
+    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1 --set installCRDs=true
 
     # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
     while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
@@ -238,6 +239,17 @@ spec:
   - ${certificate_dns_name}" | kubectl apply --validate=false -f -
 
     echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
+    # Create a datadog seceret in $HELM_cluster_id for audit log shipment to datadog -
+    # Datadog agent is running as a sidecar in the vault continer
+    if [[ -z $(kubectl get secrets datadog-vault-secret --namespace  $HELM_cluster_id ) ]]
+    then
+        echo "Creating a Datadog API key secret for Datadog agent side car container to vault..."
+        kubectl create secret generic datadog-vault-secret \
+                           --from-literal api-key=$DD_API_KEY \
+                           --namespace  $HELM_cluster_id
+    else
+        echo "Datadog API key secret for Datadog agent side car container to vault already exists."
+    fi
     # Run the appropriate Helm command for the Vault release
     helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
             vault ./vault-helm \
@@ -303,7 +315,7 @@ spec:
     else
         echo "command: $(get_helm_command_for_release "datadog" "datadog-agent") not initialized for helm datadog.  We will do nothing in this case."
     fi
-    
+
       # logic for the datadog-cluster-agent
     if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" && $enable_datadog == "yes" ]]
     then
@@ -350,7 +362,7 @@ spec:
     # helm list - show deployments
     echo "listing all helm deployments:"
     helm list --all-namespaces
-    
+
 }
 
 #

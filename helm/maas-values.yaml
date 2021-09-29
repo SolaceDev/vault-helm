@@ -17,10 +17,13 @@ injector:
   enabled: false
 
 server:
+  image:
+    pullPolicy: Always
   extraVolumes:
     # Required for TLS
     - type: secret
       name: vault-server-tls
+  shareProcessNamespace: true
   service:
     # Required for GCP Layer 4 Loadbalancer (so Vault can terminate SSL)
     type: LoadBalancer
@@ -72,3 +75,95 @@ server:
         bucket     = "{{ .Values.maas.bucketName }}"
         ha_enabled = "true"
       }
+  logrotate:
+    enabled: true
+    config:
+      logRotateConf: |-
+          /vault/audit/audit.log {
+              rotate 0
+              copytruncate
+              size 5M
+              missingok
+              compress
+              postrotate
+                  pkill -HUP -f "vault server"
+                  status=$?
+                  echo  "`date`: Audit log rotated  -  SIGHUP to vault exit code was $status" > /vault/audit/last-rotate-status
+              endscript
+          }
+    datadogsidecar:
+      config: |-
+        logs:
+          - type: file
+            path: /vault/audit/audit.log
+            source: vault-audit.log
+            service: maas-vault
+
+  extraContainers:
+    - name: logrotate
+      image: gcr.io/maas-vault-prod/maas-vault-logrotate
+      volumeMounts:
+      - mountPath: /etc/logrotate.conf
+        name: vault-logrotate-config
+        subPath: logrotate.conf
+        readOnly: true
+      - name: audit
+        mountPath: /vault/audit
+      env:
+      - name: TINI_SUBREAPER # tini won't be PID 1 due to shareProcessNamespace
+        value: "100"
+    - name: datadog-agent
+      image: gcr.io/maas-vault-prod/datadog-agent:7
+      securityContext:
+        runAsGroup: 0
+      ports:
+        - containerPort: 8125
+          name: dogstatsdport
+          protocol: UDP
+        - containerPort: 8126
+          name: traceport
+          protocol: TCP
+      resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumeMounts:
+      - mountPath: /etc/datadog-agent/conf.d/vault.d/conf.yaml
+        name: vault-datadog-config
+        subPath: conf.yaml
+        readOnly: true
+      - name: audit
+        mountPath: /vault/audit
+      env:
+        - name: DD_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-vault-secret
+              key: api-key
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_USE_HTTP
+          value: "true"
+        - name: DD_LOGS_CONFIG_USE_COMPRESSION
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "false"
+        - name: DD_ENABLE_PAYLOADS_SERIES
+          value: "false"
+        - name: DD_ENABLE_PAYLOADS_EVENTS
+          value: "false"
+        - name: DD_ENABLE_PAYLOADS_SERVICE_CHECKS
+          value: "false"
+        - name: DD_ENABLE_PAYLOADS_SKETCHES
+          value: "false"
+        - name: DD_PROCFS_PATH
+          value: /proc
