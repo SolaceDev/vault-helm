@@ -168,16 +168,6 @@ function command_deploy {
     export HELM_project_id
     export HELM_lb_address
 
-    # if [[ ${HELM_project_id} == "maas-vault-prod" ]]; then
-    #     CERT_MANAGER_SUFFIX=-legacy
-    # fi
-
-    # Install the cert-manager CRDs
-    # kubectl apply \
-    #         --validate=false \
-    #         -f https://github.com/jetstack/cert-manager/releases/download/v0.14.1/cert-manager${CERT_MANAGER_SUFFIX:-}.crds.yaml \
-    #         -n cert-manager
-
     # Create the cert-manager namespace if it doesn't exist
     create_namespace_if_missing "cert-manager"
 
@@ -261,7 +251,9 @@ spec:
             --set maas.kmsProject=$HELM_project_id \
             --set maas.kmsKeyRing=$HELM_project_id \
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
-            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data
+            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data \
+            --set server.extraContainers[0].image="gcr.io/${HELM_project_id}/maas-vault-logrotate" \
+            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7" \
 
     echo "creating namespace datadog, if it does not exist..."
     # create a separate namespace to run datadog in
