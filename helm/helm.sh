@@ -253,7 +253,7 @@ spec:
             --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
             --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data \
             --set server.extraContainers[0].image="gcr.io/${HELM_project_id}/maas-vault-logrotate" \
-            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7" \
+            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7"
 
     echo "creating namespace datadog, if it does not exist..."
     # create a separate namespace to run datadog in
