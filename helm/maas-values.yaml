@@ -23,7 +23,7 @@ server:
     # Required for TLS
     - type: secret
       name: vault-server-tls
-  shareProcessNamespace: true
+  shareProcessNamespace: false
   service:
     # Required for GCP Layer 4 Loadbalancer (so Vault can terminate SSL)
     type: LoadBalancer
@@ -82,13 +82,11 @@ server:
           /vault/audit/audit.log {
               rotate 0
               copytruncate
-              size 5M
+              size 500M
               missingok
               compress
               postrotate
-                  pkill -HUP -f "vault server"
-                  status=$?
-                  echo  "`date`: Audit log rotated  -  SIGHUP to vault exit code was $status" > /vault/audit/last-rotate-status
+                  echo  "`date`: Audit log rotated successfully!" > /vault/audit/last-rotate-status
               endscript
           }
     datadogsidecar:
@@ -101,7 +99,7 @@ server:
 
   extraContainers:
     - name: logrotate
-      image: gcr.io/maas-vault-prod/maas-vault-logrotate
+      image: 
       volumeMounts:
       - mountPath: /etc/logrotate.conf
         name: vault-logrotate-config
@@ -113,7 +111,7 @@ server:
       - name: TINI_SUBREAPER # tini won't be PID 1 due to shareProcessNamespace
         value: "100"
     - name: datadog-agent
-      image: gcr.io/maas-vault-prod/datadog-agent:7
+      image: 
       securityContext:
         runAsGroup: 0
       ports:
