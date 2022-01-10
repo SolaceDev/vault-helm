@@ -50,6 +50,30 @@ do
   esac
 done
 
+#
+# Check if environment variable CI is NOT SET and the PROJECT_ID is set to
+# maas-vault-prod, to trigger the warning banner and additional prompt.
+#
+if [ "${CI+x}" != "x" ] && [ "${PROJECT_ID:-}" == "maas-vault-prod" ] ; then
+  echo ""
+  echo "[95mPPPPP   RRRRR    OOOO   DDDDD [0m"
+  echo "[35mP    P  R    R  O    O  D    D[0m"
+  echo "[34mP    P  R    R  O    O  D    D[0m"
+  echo "[32mP    P  R    R  O    O  D    D[0m"
+  echo "[92mPPPPP   RRRRR   O    O  D    D[0m"
+  echo "[93mP       R  R    O    O  D    D[0m"
+  echo "[33mP       R   R   O    O  D    D[0m"
+  echo "[31mP       R    R   OOOO   DDDDD [0m"
+  echo ""
+  echo "Are you sure you want to deploy to production?"
+  read -p "Enter 'prod' to confirm: " answer
+
+  if [ "${answer}" != "prod" ]; then
+    echo "Aborted"
+    exit 0
+  fi
+fi
+
 # required:  cluster_id, command_name
 # optional:  region, project_id (default set above)
 # optional:  enable_datadog - if set, either a github token or api/app key are required
