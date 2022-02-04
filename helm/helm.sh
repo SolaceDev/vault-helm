@@ -182,7 +182,12 @@ function command_deploy {
     helm repo update
 
     # Run the appropriate Helm command
-    helm $(get_helm_command_for_release "cert-manager" "cert-manager") "cert-manager" "jetstack/cert-manager" --namespace "cert-manager" --version 0.15.1 --set installCRDs=true
+    helm upgrade \
+      "cert-manager" "jetstack/cert-manager" \
+      --install \
+      --namespace "cert-manager" \
+      --version 0.15.1 \
+      --set installCRDs=true
 
     # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
     while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
@@ -228,7 +233,6 @@ spec:
   dnsNames:
   - ${certificate_dns_name}" | kubectl apply --validate=false -f -
 
-    echo " $(get_helm_command_for_release "$HELM_cluster_id" "vault") vault"
     # Create a datadog seceret in $HELM_cluster_id for audit log shipment to datadog -
     # Datadog agent is running as a sidecar in the vault continer
     if [[ -z $(kubectl get secrets datadog-vault-secret --namespace  $HELM_cluster_id ) ]]
@@ -241,11 +245,13 @@ spec:
         echo "Datadog API key secret for Datadog agent side car container to vault already exists."
     fi
     # Run the appropriate Helm command for the Vault release
-    helm $(get_helm_command_for_release "$HELM_cluster_id" "vault") \
+    helm upgrade \
             vault ./vault-helm \
+            ${HELM_UPGRADE_FORCE:+"--force"} \
+            ${HELM_DRY_RUN:+"--dry-run"} \
+            --install \
             --namespace $HELM_cluster_id \
             --values ./maas-values.yaml \
-            --values ./upgrade.yaml \
             --set maas.gcpProject=$HELM_project_id \
             --set maas.lbAddress=$HELM_lb_address \
             --set maas.kmsProject=$HELM_project_id \
