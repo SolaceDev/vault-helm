@@ -45,8 +45,8 @@ be followed ahead of running the *deploy_local.sh* script:
 
 1. Obtain a Google Cloud Service Account key from the Google Cloud Console and save it in the file *~/.config/gcloud/application_default_credentials.json*
 1. If including the DataDog component, obtain the DataDog API key and App key from PE and set the following environment variables:
-* * **DD_API_KEY**: Set the DataDog API key
-* * **DD_APP_KEY**: Set the DataDog APP key
+   * **DD_API_KEY**: Set the DataDog API key
+   * **DD_APP_KEY**: Set the DataDog APP key
 1. If including the DataDog component, export the environment variables
 
 The *deploy_local.sh* script can now be used.
