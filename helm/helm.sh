@@ -272,7 +272,6 @@ spec:
         # logic to handle the datadog-agent upgrade process
         if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]] ; then
             echo "installing datadog..."
-            # deploy datadog via helm v3
             helm install --namespace "datadog" --values ./datadog/datadog-values.yaml \
                 datadog-agent \
                 --set datadog.apiKey=datadog-secret \
@@ -286,7 +285,6 @@ spec:
                 stable/datadog --set targetSystem=linux
         else
             echo "upgrading datadog..."
-            # upgrade datadog via helm
             helm upgrade --install --namespace "datadog" --values ./upgrade.yaml --values ./datadog/datadog-values.yaml \
                 datadog-agent \
                 --set datadog.apiKeyExistingSecret=datadog-secret \
