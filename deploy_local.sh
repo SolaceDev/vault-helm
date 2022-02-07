@@ -168,29 +168,24 @@ else
 fi
 
 
-if [[ "${enable_datadog:-""}" == "yes" ]]; then
-
-  # Retrieve DataDog secrets from production Vault is they weren't provided.
-  if [ "$command_name" == "deploy" ]; then
-
-    # Default Datadog Vault path suffix
-    vault_path_suffix=dev
-    if [ "$PROJECT_ID" == "maas-vault-prod" ]; then
-      vault_path_suffix=production
-    fi
-
-    if [ -z "${DD_API_KEY:-""}" ]; then
-      
-      DD_API_KEY=$(vault kv get -field=api-key kv/datadog/$vault_path_suffix)
-    fi
-
-    if [ -z "${DD_APP_KEY:-""}" ]; then
-      DD_APP_KEY=$(vault kv get -field=app-key kv/datadog/$vault_path_suffix)
-    fi
-
-    # ensure that the keys were not empty
-    test -n $DD_API_KEY -a -n $DD_APP_KEY
+if [ "${enable_datadog:-""}" == "yes" ] && [ "$command_name" == "deploy" ] ; then
+  # Default Datadog Vault path suffix
+  vault_path_suffix=dev
+  if [ "$PROJECT_ID" == "maas-vault-prod" ]; then
+    vault_path_suffix=production
   fi
+
+  if [ -z "${DD_API_KEY:-""}" ]; then
+      
+    DD_API_KEY=$(vault kv get -field=api-key kv/datadog/$vault_path_suffix)
+  fi
+
+  if [ -z "${DD_APP_KEY:-""}" ]; then
+    DD_APP_KEY=$(vault kv get -field=app-key kv/datadog/$vault_path_suffix)
+  fi
+
+  # ensure that the keys were not empty
+  test -n $DD_API_KEY -a -n $DD_APP_KEY
 fi
 
 export DD_API_KEY
