@@ -4,6 +4,7 @@ set -eu${DEBUG+x}o pipefail
 # this is the place holder for pulling the dd api key from vault at https://vault.maas-vault-prod.solace.cloud:8200
 export VAULT_ADDR=https://vault.maas-vault-prod.solace.cloud:8200
 vault_is_setup=0
+vault_credentials_used=0
 
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID="maas-vault-dev"
@@ -142,7 +143,7 @@ function setup_vault {
   # Check if a valid Vault token is present
   if ! vault token lookup &> /dev/null ; then
     echo "Vault token is either invalid or missing. Please complete the vault login below to obtain a token."
-    vault login -method=github
+    vault login -method=github > /dev/null
   fi
 
   # Check that the Vault token has the necessary access
@@ -155,18 +156,34 @@ function setup_vault {
   vault_is_setup=1
 }
 
-# Attempt to obtain GCP credentials from Vault
-if (setup_vault) ; then
-  vault read -field=private_key_data gcp/key/vault-gcp-cluster-${PROJECT_ID##"maas-vault-"} | base64 --decode > ~/.config/gcloud/application_default_credentials.json
-else
-  if [ ! -r $HOME/.config/gcloud/application_default_credentials.json ] ; then
+#
+# clean_up_vault_credentials:
+#   This function is called by the TRAP set for this script to remove the
+#   application_default_credentials.json file if it was created using data
+#   from Vault.
+#
+function clean_up_vault_credentials {
+  if [ "$vault_credentials_used" == "1" ] ; then
+    rm -f "$HOME/.config/gcloud/application_default_credentials.json"
+  fi
+}
+
+trap clean_up_vault_credentials EXIT
+
+# Make sure GCP credentials are in place
+if [ ! -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
+  
+  # Attempt to obtain GCP credentials from Vault
+  if (setup_vault) ; then
+    vault read -field=private_key_data gcp/key/vault-gcp-cluster-${PROJECT_ID##"maas-vault-"} | base64 --decode > ~/.config/gcloud/application_default_credentials.json
+    vault_credentials_used=1
+  else
     echo "Vault server not available to obtain dynamic Service Account key"
     echo "Use Google Cloud Console to manually open Service Account key and store it"
     echo "at $HOME/.config/gcloud/application_default_credentials.json"
     exit 1
   fi
 fi
-
 
 if [ "${enable_datadog:-""}" == "yes" ] && [ "$command_name" == "deploy" ] ; then
   # Default Datadog Vault path suffix
