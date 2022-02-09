@@ -186,21 +186,27 @@ if [ ! -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
 fi
 
 if [ "${enable_datadog:-""}" == "yes" ] && [ "$command_name" == "deploy" ] ; then
-  # Default Datadog Vault path suffix
-  vault_path_suffix=dev
-  if [ "$PROJECT_ID" == "maas-vault-prod" ]; then
-    vault_path_suffix=production
-  fi
 
-  if [ -z "${DD_API_KEY:-""}" ]; then
-      
-    DD_API_KEY=$(vault kv get -field=api-key kv/datadog/$vault_path_suffix)
-  fi
+  if (setup_vault) ; then
+    # Default Datadog Vault path suffix
+    vault_path_suffix=dev
+    if [ "$PROJECT_ID" == "maas-vault-prod" ]; then
+      vault_path_suffix=production
+    fi
 
-  if [ -z "${DD_APP_KEY:-""}" ]; then
-    DD_APP_KEY=$(vault kv get -field=app-key kv/datadog/$vault_path_suffix)
-  fi
+    if [ -z "${DD_API_KEY:-""}" ]; then
+      DD_API_KEY=$(vault kv get -field=api-key kv/datadog/$vault_path_suffix)
+    fi
 
+    if [ -z "${DD_APP_KEY:-""}" ]; then
+      DD_APP_KEY=$(vault kv get -field=app-key kv/datadog/$vault_path_suffix)
+    fi
+  else
+    echo "Vault server not available to obtain DataDog API and APP keys"
+    echo "Use DataDog Console to manually open them and set the"
+    echo "DD_API_KEY and DD_APP_KEY environment variables with them."
+    exit 1
+  fi
   # ensure that the keys were not empty
   test -n $DD_API_KEY -a -n $DD_APP_KEY
 fi
