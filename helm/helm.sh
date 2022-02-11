@@ -264,7 +264,7 @@ spec:
         create_namespace_if_missing datadog
 
         # put the dd_api_key and dd_app_key into k8s secrets (if they don't exist)
-        if ! kubectl get secret idatadog-secret --namespace datadog ; then
+        if ! kubectl get secret datadog-secret --namespace datadog ; then
             echo "datadog-secret does not exist, creating it..."
             kubectl create secret generic datadog-secret --from-literal api-key=$DD_API_KEY --from-literal app-key=$DD_APP_KEY --namespace datadog
         fi
