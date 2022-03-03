@@ -19,6 +19,7 @@ injector:
 server:
   image:
     pullPolicy: Always
+    tag: 1.4.7
   extraVolumes:
     # Required for TLS
     - type: secret
