@@ -5,6 +5,10 @@ This repository is used as a submodule in other repositories that install and se
 
 # Vault Helm Chart
 
+> :warning: **Please note**: We take Vault's security and our users' trust very seriously. If 
+you believe you have found a security issue in Vault Helm, _please responsibly disclose_ 
+by contacting us at [security@hashicorp.com](mailto:security@hashicorp.com).
+
 This repository contains the official HashiCorp Helm chart for installing
 and configuring Vault on Kubernetes. This chart supports multiple use
 cases of Vault on Kubernetes depending on the values provided.
@@ -16,16 +20,16 @@ use Vault with Kubernetes, please see the
 ## Prerequisites
 
 To use the charts here, [Helm](https://helm.sh/) must be configured for your
-Kubernetes cluster. Setting up Kubernetes and Helm and is outside the scope of
+Kubernetes cluster. Setting up Kubernetes and Helm is outside the scope of
 this README. Please refer to the Kubernetes and Helm documentation.
 
 The versions required are:
 
   * **Helm 3.0+** - This is the earliest version of Helm tested. It is possible
     it works with earlier versions but this chart is untested for those versions.
-  * **Kubernetes 1.9+** - This is the earliest version of Kubernetes tested.
+  * **Kubernetes 1.16+** - This is the earliest version of Kubernetes tested.
     It is possible that this chart works with earlier versions but it is
-    untested. Other versions verified are Kubernetes 1.10, 1.11.
+    untested.
 
 ## Usage
 
