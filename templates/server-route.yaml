@@ -2,14 +2,13 @@
 {{- if ne .mode "external" }}
 {{- if .Values.server.route.enabled -}}
 {{- $serviceName := include "vault.fullname" . -}}
-{{- if and (eq .mode "ha" ) (eq (.Values.server.route.activeService | toString) "true") }}
+{{- if eq .mode "ha" }}
 {{- $serviceName = printf "%s-%s" $serviceName "active" -}}
 {{- end }}
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: {{ template "vault.fullname" . }}
-  namespace: {{ .Release.Namespace }}
   labels:
     helm.sh/chart: {{ include "vault.chart" . }}
     app.kubernetes.io/name: {{ include "vault.name" . }}
@@ -28,7 +27,7 @@ spec:
   port:
     targetPort: 8200
   tls:
-    {{- toYaml .Values.server.route.tls | nindent  4 }}
+    termination: passthrough
 {{- end }}
 {{- end }}
 {{- end }}

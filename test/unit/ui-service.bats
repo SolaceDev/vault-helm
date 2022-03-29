@@ -53,18 +53,6 @@ load _helpers
   [ "${actual}" = "false" ]
 }
 
-@test "ui/Service: 'disable with global, enable with ui.enabled'" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'global.enabled=false' \
-      --set 'server.enabled=true' \
-      --set 'ui.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r 'length > 0' | tee /dev/stderr)
-  [ "${actual}" = "true" ]
-}
-
 @test "ui/Service: disable with injector.externalVaultAddr" {
   cd `chart_dir`
   local actual=$( (helm template \
@@ -147,16 +135,6 @@ load _helpers
       . | tee /dev/stderr |
       yq -r '.spec.type' | tee /dev/stderr)
   [ "${actual}" = "LoadBalancer" ]
-
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'server.standalone.enabled=true' \
-      --set 'ui.serviceType=LoadBalancer' \
-      --set 'ui.externalTrafficPolicy=Local' \
-      --set 'ui.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.externalTrafficPolicy' | tee /dev/stderr)
-  [ "${actual}" = "Local" ]
 }
 
 @test "ui/Service: LoadBalancerIP set if specified and serviceType == LoadBalancer" {
@@ -202,19 +180,6 @@ load _helpers
       --set 'ui.loadBalancerSourceRanges={"123.123.123.123"}' \
       . | tee /dev/stderr |
       yq -r '.spec.loadBalancerSourceRanges[0]' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-}
-
-@test "ui/Service: ClusterIP assert no externalTrafficPolicy" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'server.standalone.enabled=true' \
-      --set 'ui.serviceType=ClusterIP' \
-      --set 'ui.externalTrafficPolicy=Foo' \
-      --set 'ui.enabled=true' \
-      . | tee /dev/stderr |
-      yq '.spec.externalTrafficPolicy' | tee /dev/stderr)
   [ "${actual}" = "null" ]
 }
 
@@ -282,106 +247,4 @@ load _helpers
       . | tee /dev/stderr |
       yq -r '.spec.ports[0].name' | tee /dev/stderr)
   [ "${actual}" = "https" ]
-}
-
-@test "ui/Service: publishNotReadyAddresses set true by default" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.publishNotReadyAddresses' | tee /dev/stderr)
-  [ "${actual}" = "true" ]
-}
-
-@test "ui/Service: publishNotReadyAddresses can be set to false" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      --set 'ui.publishNotReadyAddresses=false' \
-      . | tee /dev/stderr |
-      yq -r '.spec.publishNotReadyAddresses' | tee /dev/stderr)
-  [ "${actual}" = 'false' ]
-}
-
-@test "ui/Service: active pod only selector not set by default" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.selector["vault-active"]' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-}
-
-@test "ui/Service: active pod only selector can be set on HA" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      --set 'ui.activeVaultPodOnly=true' \
-      --set 'server.dev.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.selector["vault-active"]' | tee /dev/stderr)
-  [ "${actual}" = 'null' ]
-
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      --set 'ui.activeVaultPodOnly=true' \
-      --set 'server.ha.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.selector["vault-active"]' | tee /dev/stderr)
-  [ "${actual}" = 'true' ]
-}
-
-@test "ui/Service: default is no nodePort" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml \
-      --set 'ui.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.ports[0].nodePort' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-}
-
-@test "ui/Service: can set nodePort" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml \
-      --set 'ui.enabled=true' \
-      --set 'ui.serviceNodePort=123' \
-      . | tee /dev/stderr |
-      yq -r '.spec.ports[0].nodePort' | tee /dev/stderr)
-  [ "${actual}" = "123" ]
-}
-
-@test "ui/Service: LoadBalancer assert externalTrafficPolicy" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      --set 'server.standalone.enabled=true' \
-      --set 'ui.serviceType=LoadBalancer' \
-      --set 'ui.externalTrafficPolicy=Foo' \
-      . | tee /dev/stderr |
-      yq -r '.spec.externalTrafficPolicy' | tee /dev/stderr)
-  [ "${actual}" = "Foo" ]
-}
-
-@test "ui/Service: LoadBalancer assert no externalTrafficPolicy" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/ui-service.yaml  \
-      --set 'ui.enabled=true' \
-      --set 'server.standalone.enabled=true' \
-      --set 'ui.serviceType=LoadBalancer' \
-      --set 'ui.externalTrafficPolicy=' \
-      . | tee /dev/stderr |
-      yq '.spec.externalTrafficPolicy' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-
 }

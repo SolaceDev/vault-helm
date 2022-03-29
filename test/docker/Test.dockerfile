@@ -6,10 +6,10 @@
 # a script to configure kubectl, potentially install Helm, and run the tests
 # manually. This image only has the dependencies pre-installed.
 
-FROM docker.mirror.hashicorp.services/alpine:latest
+FROM alpine:latest
 WORKDIR /root
 
-ENV BATS_VERSION "1.3.0"
+ENV BATS_VERSION "1.1.0"
 ENV TERRAFORM_VERSION "0.12.10"
 
 # base packages
@@ -19,6 +19,7 @@ RUN apk update && apk add --no-cache --virtual .build-deps \
     tar \
     bash \
     openssl \
+    python \
     py-pip \
     git \
     make \

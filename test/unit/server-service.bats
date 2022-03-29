@@ -143,6 +143,32 @@ load _helpers
   [ "${actual}" = "false" ]
 }
 
+# This can be seen as testing just what we put into the YAML raw, but
+# this is such an important part of making everything work we verify it here.
+@test "server/Service: tolerates unready endpoints" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-service.yaml \
+      --set 'server.dev.enabled=true' \
+      . | tee /dev/stderr |
+      yq -r '.metadata.annotations["service.alpha.kubernetes.io/tolerate-unready-endpoints"]' | tee /dev/stderr)
+  [ "${actual}" = "true" ]
+
+  local actual=$(helm template \
+      --show-only templates/server-service.yaml \
+      --set 'server.ha.enabled=true' \
+      . | tee /dev/stderr |
+      yq -r '.metadata.annotations["service.alpha.kubernetes.io/tolerate-unready-endpoints"]' | tee /dev/stderr)
+  [ "${actual}" = "true" ]
+
+  local actual=$(helm template \
+      --show-only templates/server-service.yaml \
+      --set 'server.standalone.enabled=true' \
+      . | tee /dev/stderr |
+      yq -r '.metadata.annotations["service.alpha.kubernetes.io/tolerate-unready-endpoints"]' | tee /dev/stderr)
+  [ "${actual}" = "true" ]
+}
+
 @test "server/Service: generic annotations" {
   cd `chart_dir`
   local actual=$(helm template \
@@ -175,13 +201,6 @@ load _helpers
       . | tee /dev/stderr |
       yq -r '.spec.publishNotReadyAddresses' | tee /dev/stderr)
   [ "${actual}" = "true" ]
-
-  local actual=$(helm template \
-      --show-only templates/server-service.yaml \
-      --set 'server.service.publishNotReadyAddresses=false' \
-      . | tee /dev/stderr |
-      yq -r '.spec.publishNotReadyAddresses' | tee /dev/stderr)
-  [ "${actual}" = "false" ]
 }
 
 @test "server/Service: type empty by default" {
@@ -391,43 +410,3 @@ load _helpers
       yq -r '.spec.ports | map(select(.port==8200)) | .[] .name' | tee /dev/stderr)
   [ "${actual}" = "https" ]
 }
-
-# duplicated in server-ha-active-service.bats
-@test "server/Service: NodePort assert externalTrafficPolicy" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/server-service.yaml \
-      --set 'server.ha.enabled=true' \
-      --set 'server.service.type=NodePort' \
-      --set 'server.service.externalTrafficPolicy=Foo' \
-      . | tee /dev/stderr |
-      yq -r '.spec.externalTrafficPolicy' | tee /dev/stderr)
-  [ "${actual}" = "Foo" ]
-}
-
-# duplicated in server-ha-active-service.bats
-@test "server/ha-active-Service: NodePort assert no externalTrafficPolicy" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/server-service.yaml \
-      --set 'server.ha.enabled=true' \
-      --set 'server.service.type=NodePort' \
-      --set 'server.service.externalTrafficPolicy=' \
-      . | tee /dev/stderr |
-      yq '.spec.externalTrafficPolicy' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-}
-
-# duplicated in server-ha-active-service.bats
-@test "server/Service: ClusterIP assert no externalTrafficPolicy" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/server-service.yaml \
-      --set 'server.ha.enabled=true' \
-      --set 'server.service.type=ClusterIP' \
-      --set 'server.service.externalTrafficPolicy=Foo' \
-      . | tee /dev/stderr |
-      yq '.spec.externalTrafficPolicy' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-}
-

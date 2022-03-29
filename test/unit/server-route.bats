@@ -99,23 +99,10 @@ load _helpers
       --set 'server.route.enabled=true' \
       . | tee /dev/stderr |
       yq -r '.spec.to.name' | tee /dev/stderr)
-  [ "${actual}" = "release-name-vault" ]
+  [ "${actual}" = "RELEASE-NAME-vault" ]
 }
 
-@test "server/route: OpenShift - route points to main service when not ha and activeService is true" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/server-route.yaml \
-      --set 'global.openshift=true' \
-      --set 'server.route.enabled=true' \
-      --set 'server.route.activeService=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.to.name' | tee /dev/stderr)
-  [ "${actual}" = "release-name-vault" ]
-}
-
-@test "server/route: OpenShift - route points to active service by when HA by default" {
+@test "server/route: OpenShift - route points to active service by when HA" {
   cd `chart_dir`
 
   local actual=$(helm template \
@@ -125,57 +112,5 @@ load _helpers
       --set 'server.ha.enabled=true' \
       . | tee /dev/stderr |
       yq -r '.spec.to.name' | tee /dev/stderr)
-  [ "${actual}" = "release-name-vault-active" ]
-}
-
-@test "server/route: OpenShift - route points to general service by when HA when configured" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/server-route.yaml \
-      --set 'global.openshift=true' \
-      --set 'server.route.enabled=true' \
-      --set 'server.route.activeService=false' \
-      --set 'server.ha.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.to.name' | tee /dev/stderr)
-  [ "${actual}" = "release-name-vault" ]
-}
-
-@test "server/route: OpenShift - route termination mode set to default passthrough" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/server-route.yaml \
-      --set 'global.openshift=true' \
-      --set 'server.route.enabled=true' \
-      . | tee /dev/stderr |
-      yq -r '.spec.tls.termination' | tee /dev/stderr)
-  [ "${actual}" = "passthrough" ]
-}
-
-@test "server/route: OpenShift - route termination mode set to edge" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/server-route.yaml \
-      --set 'global.openshift=true' \
-      --set 'server.route.enabled=true' \
-      --set 'server.route.tls.termination=edge' \
-      . | tee /dev/stderr |
-      yq -r '.spec.tls.termination' | tee /dev/stderr)
-  [ "${actual}" = "edge" ]
-}
-
-@test "server/route: OpenShift - route custom tls entry" {
-  cd `chart_dir`
-
-  local actual=$(helm template \
-      --show-only templates/server-route.yaml \
-      --set 'global.openshift=true' \
-      --set 'server.route.enabled=true' \
-      --set 'server.route.tls.insecureEdgeTerminationPolicy=Redirect' \
-      . | tee /dev/stderr |
-      yq -r '.spec.tls.insecureEdgeTerminationPolicy' | tee /dev/stderr)
-  [ "${actual}" = "Redirect" ]
+  [ "${actual}" = "RELEASE-NAME-vault-active" ]
 }

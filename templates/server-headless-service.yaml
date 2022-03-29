@@ -1,7 +1,6 @@
 {{ template "vault.mode" . }}
 {{- if ne .mode "external" }}
-{{- template "vault.serverServiceEnabled" . -}}
-{{- if .serverServiceEnabled -}}
+{{- if and (eq (.Values.server.service.enabled | toString) "true" ) (eq (.Values.global.enabled | toString) "true") }}
 # Service for Vault cluster
 apiVersion: v1
 kind: Service
@@ -14,10 +13,11 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
 {{ template "vault.service.annotations" .}}
 spec:
   clusterIP: None
-  publishNotReadyAddresses: {{ .Values.server.service.publishNotReadyAddresses }}
+  publishNotReadyAddresses: true
   ports:
     - name: "{{ include "vault.scheme" . }}"
       port: {{ .Values.server.service.port }}

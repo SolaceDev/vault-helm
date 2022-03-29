@@ -7,15 +7,16 @@ load _helpers
 
   helm install "$(name_prefix)-east" \
     --set='server.image.repository=hashicorp/vault-enterprise' \
-    --set='server.image.tag=1.9.3-ent' \
+    --set='server.image.tag=1.4.2_ent' \
     --set='injector.enabled=false' \
     --set='server.ha.enabled=true' \
-    --set='server.ha.raft.enabled=true' \
-    --set='server.enterpriseLicense.secretName=vault-license' .
+    --set='server.ha.raft.enabled=true' .
   wait_for_running "$(name_prefix)-east-0"
 
   # Sealed, not initialized
-  wait_for_sealed_vault $(name_prefix)-east-0
+  local sealed_status=$(kubectl exec "$(name_prefix)-east-0" -- vault status -format=json |
+    jq -r '.sealed' )
+  [ "${sealed_status}" == "true" ]
 
   local init_status=$(kubectl exec "$(name_prefix)-east-0" -- vault status -format=json |
     jq -r '.initialized')
@@ -27,7 +28,7 @@ load _helpers
 
   local primary_token=$(echo ${init} | jq -r '.unseal_keys_b64[0]')
   [ "${primary_token}" != "" ]
-
+  
   local primary_root=$(echo ${init} | jq -r '.root_token')
   [ "${primary_root}" != "" ]
 
@@ -48,7 +49,7 @@ load _helpers
       fi
   done
 
-  # Unsealed, initialized
+  # Sealed, not initialized
   local sealed_status=$(kubectl exec "$(name_prefix)-east-0" -- vault status -format=json |
     jq -r '.sealed' )
   [ "${sealed_status}" == "false" ]
@@ -59,7 +60,7 @@ load _helpers
 
   kubectl exec "$(name_prefix)-east-0" -- vault login ${primary_root}
 
-  local raft_status=$(kubectl exec "$(name_prefix)-east-0" -- vault operator raft list-peers -format=json |
+  local raft_status=$(kubectl exec "$(name_prefix)-east-0" -- vault operator raft list-peers -format=json | 
     jq -r '.data.config.servers | length')
   [ "${raft_status}" == "3" ]
 
@@ -75,14 +76,15 @@ load _helpers
   helm install "$(name_prefix)-west" \
     --set='injector.enabled=false' \
     --set='server.image.repository=hashicorp/vault-enterprise' \
-    --set='server.image.tag=1.9.3-ent' \
+    --set='server.image.tag=1.4.2_ent' \
     --set='server.ha.enabled=true' \
-    --set='server.ha.raft.enabled=true' \
-    --set='server.enterpriseLicense.secretName=vault-license' .
+    --set='server.ha.raft.enabled=true' .
   wait_for_running "$(name_prefix)-west-0"
 
   # Sealed, not initialized
-  wait_for_sealed_vault $(name_prefix)-west-0
+  local sealed_status=$(kubectl exec "$(name_prefix)-west-0" -- vault status -format=json |
+    jq -r '.sealed' )
+  [ "${sealed_status}" == "true" ]
 
   local init_status=$(kubectl exec "$(name_prefix)-west-0" -- vault status -format=json |
     jq -r '.initialized')
@@ -115,7 +117,7 @@ load _helpers
       fi
   done
 
-  # Unsealed, initialized
+  # Sealed, not initialized
   local sealed_status=$(kubectl exec "$(name_prefix)-west-0" -- vault status -format=json |
     jq -r '.sealed' )
   [ "${sealed_status}" == "false" ]
@@ -151,7 +153,6 @@ setup() {
   kubectl delete namespace acceptance --ignore-not-found=true
   kubectl create namespace acceptance
   kubectl config set-context --current --namespace=acceptance
-  kubectl create secret generic vault-license --from-literal license=$VAULT_LICENSE_CI
 }
 
 #cleanup

@@ -40,37 +40,35 @@ helm_install_ha() {
         ${BATS_TEST_DIRNAME}/../..
 }
 
-# wait for consul to be ready
+# wait for consul to be running
 wait_for_running_consul() {
-    kubectl wait --for=condition=Ready --timeout=5m pod -l app=consul,component=client
-}
-
-wait_for_sealed_vault() {
-    POD_NAME=$1
-
     check() {
-        sealed_status=$(kubectl exec $1 -- vault status -format=json | jq -r '.sealed')
-        if [ "$sealed_status" == "true" ]; then
-            return 0
-        fi
-        return 1
+        # This requests the pod and checks whether the status is running
+        # and the ready state is true. If so, it outputs the name. Otherwise
+        # it outputs empty. Therefore, to check for success, check for nonzero
+        # string length.
+        kubectl get pods -l component=client -o json | \
+            jq -r '.items[0] | select(
+                .status.phase == "Running" and
+                ([ .status.conditions[] | select(.type == "Ready" and .status == "True") ] | length) == 1
+            ) | .metadata.name'
     }
 
     for i in $(seq 60); do
-        if check ${POD_NAME}; then
-            echo "Vault on ${POD_NAME} is running."
+        if [ -n "$(check ${POD_NAME})" ]; then
+            echo "consul clients are ready."
             return
         fi
 
-        echo "Waiting for Vault on ${POD_NAME} to be running..."
+        echo "Waiting for ${POD_NAME} to be ready..."
         sleep 2
     done
 
-    echo "Vault on ${POD_NAME} never became running."
+    echo "consul clients never became ready."
     return 1
 }
 
-# wait for a pod to be running
+# wait for a pod to be ready
 wait_for_running() {
     POD_NAME=$1
 

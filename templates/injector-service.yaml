@@ -1,5 +1,4 @@
-{{- template "vault.injectorEnabled" . -}}
-{{- if .injectorEnabled -}}
+{{- if and (eq (.Values.injector.enabled | toString) "true" ) (eq (.Values.global.enabled | toString) "true") }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,12 +8,10 @@ metadata:
     app.kubernetes.io/name: {{ include "vault.name" . }}-agent-injector
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-  {{ template "injector.service.annotations" . }}
 spec:
   ports:
-  - name: https
-    port: 443
-    targetPort: {{ .Values.injector.port }}
+  - port: 443
+    targetPort: 8080
   selector:
     app.kubernetes.io/name: {{ include "vault.name" . }}-agent-injector
     app.kubernetes.io/instance: {{ .Release.Name }}
