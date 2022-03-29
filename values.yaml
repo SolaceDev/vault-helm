@@ -156,7 +156,6 @@ server:
   #   limits:
   #     memory: 256Mi
   #     cpu: 250m
-
   # Ingress allows ingress services to be created to allow external access
   # from Kubernetes to access Vault pods.
   # If deployment is on OpenShift, the following block is ignored.
@@ -356,13 +355,17 @@ server:
     # load balancer.
     # clusterIP: None
 
-    # Configures the service type for the main Vault service.  Can be ClusterIP
-    # or NodePort.
+    # Configures the service type for the main Vault service.  Can be ClusterIP,
+    # NodePort, or LoadBalancer.
     #type: ClusterIP
 
     # If type is set to "NodePort", a specific nodePort value can be configured,
     # will be random if left blank.
     #nodePort: 30000
+
+    # If type is set to "LoadBalancer", a specific IP address can be attached
+    # to the load balancer, will be random if left blank.
+    #loadBalancerIP: 
 
     # Port on which Vault server is listening
     port: 8200
@@ -561,6 +564,8 @@ server:
     # YAML-formatted multi-line templated string map of the annotations to apply
     # to the statefulSet.
     annotations: {}
+  # A boolean flag to setup logrotate as a side car continer
+  logrotate: null
 
 # Vault UI
 ui:
