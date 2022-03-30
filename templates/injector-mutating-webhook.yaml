@@ -14,7 +14,7 @@ webhooks:
         name: {{ template "vault.fullname" . }}-agent-injector-svc
         namespace: {{ .Release.Namespace }}
         path: "/mutate"
-      caBundle: {{ .Values.injector.certs.caBundle }}
+      caBundle: {{ .Values.injector.certs.caBundle | quote }}
     rules:
       - operations: ["CREATE", "UPDATE"]
         apiGroups: [""]
@@ -23,5 +23,8 @@ webhooks:
 {{- if .Values.injector.namespaceSelector }}
     namespaceSelector:
 {{ toYaml .Values.injector.namespaceSelector | indent 6}}
+{{ end }}
+{{- with .Values.injector.failurePolicy }}
+    failurePolicy: {{.}}
 {{ end }}
 {{ end }}
