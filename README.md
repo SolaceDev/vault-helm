@@ -57,4 +57,3 @@ This Helm chart has been customized in the following ways:
 The Service spec in the **server-service.yaml** file now allows setting a
 specific IP address when the Service type is set to `LoadBalancer` and a
 **maas.lbAddress** value has been provided.
-

@@ -425,13 +425,13 @@ load _helpers
 #--------------------------------------------------------------------
 # affinity
 
-@test "injector/deployment: affinity not set by default" {
+@test "injector/deployment: affinity set by default" {
   cd `chart_dir`
   local actual=$(helm template \
       --show-only templates/injector-deployment.yaml  \
       . | tee /dev/stderr |
       yq '.spec.template.spec | .affinity? == null' | tee /dev/stderr)
-  [ "${actual}" = "true" ]
+  [ "${actual}" = "false" ]
 }
 
 @test "injector/deployment: affinity can be set" {
@@ -530,4 +530,16 @@ load _helpers
       . | tee /dev/stderr |
       yq '.spec.template.spec.securityContext.runAsGroup | length > 0' | tee /dev/stderr)
   [ "${actual}" = "false" ]
+}
+#--------------------------------------------------------------------
+# extra labels
+
+@test "injector/deployment: specify extraLabels" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/injector-deployment.yaml \
+      --set 'injector.extraLabels.foo=bar' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.metadata.labels.foo' | tee /dev/stderr)
+  [ "${actual}" = "bar" ]
 }

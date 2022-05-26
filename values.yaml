@@ -27,6 +27,17 @@ injector:
   # True if you want to enable vault agent injection.
   enabled: true
 
+  replicas: 1
+
+  # If multiple replicas are specified, by default a leader-elector side-car
+  # will be created so that only one injector attempts to create TLS certificates.
+  leaderElector:
+    enabled: true
+    image:
+      repository: "gcr.io/google_containers/leader-elector"
+      tag: "0.4"
+    ttl: 60s
+
   # If true, will enable a node exporter metrics endpoint at /metrics.
   metrics:
     enabled: false
@@ -38,7 +49,7 @@ injector:
   # image sets the repo and tag of the vault-k8s image to use for the injector.
   image:
     repository: "hashicorp/vault-k8s"
-    tag: "0.6.0"
+    tag: "0.8.0"
     pullPolicy: IfNotPresent
 
   # agentImage sets the repo and tag of the Vault image to use for the Vault Agent
@@ -46,7 +57,7 @@ injector:
   # required.
   agentImage:
     repository: "vault"
-    tag: "1.5.4"
+    tag: "1.6.2"
 
   # Mount Path of the Vault Kubernetes Auth Method.
   authPath: "auth/kubernetes"
@@ -70,11 +81,12 @@ injector:
   #      sidecar-injector: enabled
   namespaceSelector: {}
 
-  # Configures failurePolicy of the webhook. By default webhook failures are ignored.
+  # Configures failurePolicy of the webhook. The "unspecified" default behaviour deoends on the
+  # API Version of the WebHook.
   # To block pod creation while webhook is unavailable, set the policy to `Fail` below.
   # See https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#failure-policy
   #
-  # failurePolcy: Fail
+  failurePolicy: Ignore
 
   certs:
     # secretName is the name of the secret that has the TLS certificate and
@@ -111,7 +123,17 @@ injector:
   # Affinity Settings for injector pods
   # This should be a multi-line string matching the affinity section of a
   # PodSpec.
-  affinity: null
+  # Commenting out or setting as empty the affinity variable, will allow
+  # deployment of multiple replicas to single node services such as Minikube.
+  affinity: |
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ template "vault.name" . }}-agent-injector
+              app.kubernetes.io/instance: "{{ .Release.Name }}"
+              component: webhook
+          topologyKey: kubernetes.io/hostname
 
   # Toleration Settings for injector pods
   # This should be a multi-line string matching the Toleration array
@@ -133,6 +155,15 @@ injector:
   # of the annotations to apply to the injector pods
   annotations: {}
 
+  # Extra labels to attach to the agent-injector
+  # This should be a YAML map of the labels to apply to the injector
+  extraLabels: {}
+
+  # Injector service specific config
+  service:
+    # Extra annotations to attach to the injector service
+    annotations: {}
+
 server:
   # Resource requests, limits, etc. for the server cluster placement. This
   # should map directly to the value of the resources field for a PodSpec.
@@ -140,7 +171,7 @@ server:
 
   image:
     repository: "vault"
-    tag: "1.5.4"
+    tag: "1.6.2"
     # Overrides the default Image Pull Policy
     pullPolicy: IfNotPresent
 
@@ -331,6 +362,14 @@ server:
   # Enables network policy for server pods
   networkPolicy:
     enabled: false
+    egress: []
+    # egress:
+    # - to:
+    #   - ipBlock:
+    #       cidr: 10.0.0.0/24
+    #   ports:
+    #   - protocol: TCP
+    #     port: 443
 
   # Priority class for server pods
   priorityClassName: ""
@@ -419,6 +458,9 @@ server:
   # See https://www.vaultproject.io/docs/concepts/dev-server.html to know more
   dev:
     enabled: false
+
+    # Set VAULT_DEV_ROOT_TOKEN_ID value
+    devRootToken: "root"
 
   # Run Vault in "standalone" mode. This is the default mode that will deploy if
   # no arguments are given to helm. This requires a PVC for data storage to use

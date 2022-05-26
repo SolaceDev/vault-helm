@@ -66,8 +66,14 @@ spec:
           {{ template "vault.resources" . }}
           image: {{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default "latest" }}
           imagePullPolicy: {{ .Values.server.image.pullPolicy }}
-          command: {{ template "vault.command" . }}
+          command:
+          - "/bin/sh"
+          - "-ec"
           args: {{ template "vault.args" . }}
+          {{- if not .Values.global.openshift }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          {{- end }}
           env:
             - name: HOST_IP
               valueFrom:

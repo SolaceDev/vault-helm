@@ -1,5 +1,27 @@
 ## Unreleased
 
+## 0.9.1 (February 2nd, 2021)
+
+Bugs:
+* Injector: fix labels for default anti-affinity rule [GH-441](https://github.com/hashicorp/vault-helm/pull/441), [GH-442](https://github.com/hashicorp/vault-helm/pull/442)
+* Set VAULT_DEV_LISTEN_ADDRESS in dev mode [GH-446](https://github.com/hashicorp/vault-helm/pull/446)
+
+## 0.9.0 (January 5th, 2021)
+
+Features:
+* Injector now supports configurable number of replicas [GH-436](https://github.com/hashicorp/vault-helm/pull/436)
+* Injector now supports auto TLS for multiple replicas using leader elections [GH-436](https://github.com/hashicorp/vault-helm/pull/436)
+
+Improvements:
+* Dev mode now supports `server.extraArgs` [GH-421](https://github.com/hashicorp/vault-helm/pull/421)
+* Dev mode root token is now configurable with `server.dev.devRootToken` [GH-415](https://github.com/hashicorp/vault-helm/pull/415)
+* ClusterRoleBinding updated to `v1` [GH-395](https://github.com/hashicorp/vault-helm/pull/395)
+* MutatingWebhook updated to `v1` [GH-408](https://github.com/hashicorp/vault-helm/pull/408)
+* Injector service now supports `injector.service.annotations` [425](https://github.com/hashicorp/vault-helm/pull/425)
+* Injector now supports `injector.extraLabels` [428](https://github.com/hashicorp/vault-helm/pull/428)
+* Added `allowPrivilegeEscalation: false` to Vault and Injector containers [429](https://github.com/hashicorp/vault-helm/pull/429)
+* Network Policy now supports `server.networkPolicy.egress` [389](https://github.com/hashicorp/vault-helm/pull/389)
+
 ## 0.8.0 (October 20th, 2020)
 
 Improvements:
