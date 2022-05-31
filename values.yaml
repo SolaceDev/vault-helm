@@ -216,7 +216,7 @@ server:
 
   image:
     repository: "vault"
-    tag: "1.7.3"
+    tag: "1.7.9"
     # Overrides the default Image Pull Policy
     pullPolicy: IfNotPresent
 
