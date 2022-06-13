@@ -226,11 +226,11 @@ server:
 
   # Configure the logging verbosity for the Vault server.
   # Supported log levels include: trace, debug, info, warn, error
-  logLevel: ""
+  logLevel: "info"
 
   # Configure the logging format for the Vault server.
   # Supported log formats include: standard, json
-  logFormat: ""
+  logFormat: "standard"
 
   resources: {}
   # resources:
@@ -330,7 +330,7 @@ server:
     timeoutSeconds: 3
   # Used to enable a livenessProbe for the pods
   livenessProbe:
-    enabled: false
+    enabled: true
     path: "/v1/sys/health?standbyok=true"
     # When a probe fails, Kubernetes will try failureThreshold times before giving up
     failureThreshold: 2
