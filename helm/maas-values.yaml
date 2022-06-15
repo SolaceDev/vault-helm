@@ -17,6 +17,10 @@ injector:
   enabled: false
 
 server:
+  livenessProbe:
+    enabled: true
+  logLevel: "info"
+  logFormat: "standard"
   image:
     pullPolicy: Always
     tag: 1.7.9

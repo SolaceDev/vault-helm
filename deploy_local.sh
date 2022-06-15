@@ -175,8 +175,8 @@ if [ ! -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
   
   # Attempt to obtain GCP credentials from Vault
   if (setup_vault) ; then
-    vault read -field=private_key_data gcp/key/vault-gcp-cluster-${PROJECT_ID##"maas-vault-"} | base64 --decode > ~/.config/gcloud/application_default_credentials.json
     vault_credentials_used=1
+    vault read -field=private_key_data gcp/key/vault-gcp-cluster-${PROJECT_ID##"maas-vault-"} | base64 --decode > ~/.config/gcloud/application_default_credentials.json
   else
     echo "Vault server not available to obtain dynamic Service Account key"
     echo "Use Google Cloud Console to manually open Service Account key and store it"
