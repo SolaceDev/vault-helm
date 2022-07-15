@@ -43,10 +43,9 @@ $ helm repo add hashicorp https://helm.releases.hashicorp.com
 $ helm install vault hashicorp/vault
 ```
 
-Please see the many options supported in the `values.yaml` file. These are also
-fully documented directly on the [Vault
-website](https://www.vaultproject.io/docs/platform/k8s/helm) along with more
-detailed installation instructions.
+Please see the many options supported in the `values.yaml`
+file. These are also fully documented directly on the
+[Vault website](https://www.vaultproject.io/docs/platform/k8s/helm.html).
 
 
 ## Customizations
