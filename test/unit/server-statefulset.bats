@@ -537,7 +537,7 @@ load _helpers
   cd `chart_dir`
   local object=$(helm template \
       --show-only templates/server-statefulset.yaml  \
-      --set 'server.stanadlone.enabled=true' \
+      --set 'server.standalone.enabled=true' \
       --set 'server.extraEnvironmentVars.FOO=bar' \
       --set 'server.extraEnvironmentVars.FOOBAR=foobar' \
       . | tee /dev/stderr |
@@ -1383,6 +1383,27 @@ load _helpers
       . | tee /dev/stderr |
        yq -r '.spec.template.spec.containers[0].args[0]' | tee /dev/stderr)
   [[ "${actual}" = *"foobar"* ]]
+}
+
+#--------------------------------------------------------------------
+# terminationGracePeriodSeconds
+@test "server/standalone-StatefulSet: terminationGracePeriodSeconds default" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      . | tee /dev/stderr |
+       yq -r '.spec.template.spec.terminationGracePeriodSeconds' | tee /dev/stderr)
+  [[ "${actual}" = "10" ]]
+}
+
+@test "server/standalone-StatefulSet: terminationGracePeriodSeconds 30" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.terminationGracePeriodSeconds=30' \
+      . | tee /dev/stderr |
+       yq -r '.spec.template.spec.terminationGracePeriodSeconds' | tee /dev/stderr)
+  [[ "${actual}" = "30" ]]
 }
 
 #--------------------------------------------------------------------
