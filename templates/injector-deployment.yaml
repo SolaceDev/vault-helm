@@ -164,12 +164,6 @@ spec:
             successThreshold: {{ .Values.injector.startupProbe.successThreshold }}
             timeoutSeconds: {{ .Values.injector.startupProbe.timeoutSeconds }}
 {{- if .Values.injector.certs.secretName }}
-          volumeMounts:
-            - name: webhook-certs
-              mountPath: /etc/webhook/certs
-              readOnly: true
-{{- end }}
-{{- if .Values.injector.certs.secretName }}
       volumes:
         - name: webhook-certs
           secret:
