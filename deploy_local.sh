@@ -156,27 +156,57 @@ function setup_vault {
   vault_is_setup=1
 }
 
+# Make sure valid GCP credentials are in place
 #
-# clean_up_vault_credentials:
-#   This function is called by the TRAP set for this script to remove the
-#   application_default_credentials.json file if it was created using data
-#   from Vault.
+# This validation routine will only allow Service Account Key credentials issued
+# by the Vault server. If different credentials are needed, set the environment
+# variable SKIP_ADC_VALIDATION to 'true' to skip the validation (make sure that
+# your alternate credentials are correctly set in the file.)
 #
-function clean_up_vault_credentials {
-  if [ "$vault_credentials_used" == "1" ] ; then
+if [ "${SKIP_ADC_VALIDATION:-"false"}" != "true" && -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
+  # Found the file that is meant to contain the GCP credentials,
+
+  # Make sure the credentials type is service_account 
+  if ! jq -r '.type' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE 'service_account' ; then
+    # The file contains credentials that are not for a Service Account.
     rm -f "$HOME/.config/gcloud/application_default_credentials.json"
   fi
-}
 
-trap clean_up_vault_credentials EXIT
+  # Make sure the credentials are for the targeted GCP project
+  if ! jq -r '.project_id' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE "$PROJECT_ID" ; then
+    # The file contains credentials for the wrong project, so delete it.
+    rm -f "$HOME/.config/gcloud/application_default_credentials.json"
+  fi
 
-# Make sure GCP credentials are in place
+  # Make sure the credentials are issued by Vault server
+  if ! jq -r '.client_email' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE '^vaultvault-gcp-clus-[0-9]+@maas-vault-(prod|dev).iam.gserviceaccount.com$' ; then
+    # The file contains credentials for a different identity
+    rm -f "$HOME/.config/gcloud/application_default_credentials.json"
+  fi
+
+  # Make sure that the credentials are not expired.
+  (
+    unset GOOGLE_APPLICATION_CREDENTIALS
+    if ! gcloud auth application-default print-access-token &> /dev/null ; then
+      # The file does not contain a valid GCP credential, so delete it.
+      rm -f "$HOME/.config/gcloud/application_default_credentials.json"
+    fi
+  )
+fi
+
+# Check once more if there isn't a GCP credentials file in place
 if [ ! -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
-  
-  # Attempt to obtain GCP credentials from Vault
+  # Attempt to setup Vault token and make sure Vault server is reachable
   if (setup_vault) ; then
+
     vault_credentials_used=1
-    vault read -field=private_key_data gcp/key/vault-gcp-cluster-${PROJECT_ID##"maas-vault-"} | base64 --decode > ~/.config/gcloud/application_default_credentials.json
+    vault_credentials=$(vault read -field=private_key_data gcp/key/vault-gcp-cluster-${PROJECT_ID##"maas-vault-"})
+    if [ -n "$vault_credentials" ] ; then
+      echo "$vault_credentials" | base64 --decode > ~/.config/gcloud/application_default_credentials.json
+    else
+      echo "Vault server did not return a Service Account key. Check your Vault token and its associated policies."
+      exit 1
+    fi
   else
     echo "Vault server not available to obtain dynamic Service Account key"
     echo "Use Google Cloud Console to manually open Service Account key and store it"
