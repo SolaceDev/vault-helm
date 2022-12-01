@@ -166,32 +166,16 @@ function setup_vault {
 if [ "${SKIP_ADC_VALIDATION:-"false"}" != "true" ] && [ -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
   # Found the file that is meant to contain the GCP credentials,
 
-  # Make sure the credentials type is service_account 
-  if ! jq -r '.type' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE 'service_account' ; then
-    # The file contains credentials that are not for a Service Account.
-    rm -f "$HOME/.config/gcloud/application_default_credentials.json"
-  else
-    # Make sure the credentials are for the targeted GCP project
-    if ! jq -r '.project_id' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE "$PROJECT_ID" ; then
-      # The file contains credentials for the wrong project, so delete it.
+  (
+    unset GOOGLE_APPLICATION_CREDENTIALS
+
+    if ! jq -r '.type' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE 'service_account' || \
+        ! jq -r '.project_id' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE "$PROJECT_ID" || \
+        ! jq -r '.client_email' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE '^vaultvault-gcp-clus-[0-9]+@maas-vault-(prod|dev).iam.gserviceaccount.com$' || \
+        ! gcloud auth application-default print-access-token &> /dev/null ; then
       rm -f "$HOME/.config/gcloud/application_default_credentials.json"
-    else
-      # Make sure the credentials are issued by Vault server
-      if ! jq -r '.client_email' "$HOME/.config/gcloud/application_default_credentials.json" | grep -qE '^vaultvault-gcp-clus-[0-9]+@maas-vault-(prod|dev).iam.gserviceaccount.com$' ; then
-        # The file contains credentials for a different identity
-        rm -f "$HOME/.config/gcloud/application_default_credentials.json"
-      else
-        # Make sure that the credentials are not expired.
-        (
-          unset GOOGLE_APPLICATION_CREDENTIALS
-          if ! gcloud auth application-default print-access-token &> /dev/null ; then
-            # The file does not contain a valid GCP credential, so delete it.
-            rm -f "$HOME/.config/gcloud/application_default_credentials.json"
-          fi
-        )
-      fi
     fi
-  fi
+  )
 fi
 
 # Check once more if there isn't a GCP credentials file in place
