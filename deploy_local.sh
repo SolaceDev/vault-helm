@@ -163,7 +163,7 @@ function setup_vault {
 # variable SKIP_ADC_VALIDATION to 'true' to skip the validation (make sure that
 # your alternate credentials are correctly set in the file.)
 #
-if [ "${SKIP_ADC_VALIDATION:-"false"}" != "true" && -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
+if [ "${SKIP_ADC_VALIDATION:-"false"}" != "true" ] && [ -r "$HOME/.config/gcloud/application_default_credentials.json" ] ; then
   # Found the file that is meant to contain the GCP credentials,
 
   # Make sure the credentials type is service_account 
