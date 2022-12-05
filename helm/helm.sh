@@ -182,7 +182,7 @@ function command_deploy {
       "cert-manager" "jetstack/cert-manager" \
       --install \
       --namespace "cert-manager" \
-      --version 0.15.1 \
+      --version 1.10.1 \
       --set installCRDs=true
 
     # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
@@ -195,8 +195,16 @@ function command_deploy {
         certificate_dns_name=${HELM_cluster_id}.maas-vault-prod.solace.cloud
     fi
 
+    #Create secret for clusterIssuer service account 
+    if ! kubectl get secret clouddns-dns01-solver-svc -n cert-manager ; then
+        gcloud iam service-accounts keys create key.json \
+            --iam-account $(gcloud config get-value core/account)
+        kubectl create secret generic clouddns-dns01-solver-svc \
+            --from-file=key.json -n cert-manager 
+    fi
+
     # Create a ClusterIssuer resource
-    echo "apiVersion: cert-manager.io/v1alpha2
+    echo "apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: ${cluster_issuer_name}
@@ -209,13 +217,16 @@ spec:
       name: solace-issuer-account-key
     solvers:
     - dns01:
-        clouddns:
-            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
+        cloudDNS:
+            project: ${HELM_project_id} 
+            serviceAccountSecretRef:
+              name: clouddns-dns01-solver-svc
+              key: key.json" | kubectl apply --validate=false -f -
 
     # Create the Vault cluster namespace if it doesn't exist
     create_namespace_if_missing $HELM_cluster_id
 
-    echo "apiVersion: cert-manager.io/v1alpha2
+    echo "apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: vault-certificate
