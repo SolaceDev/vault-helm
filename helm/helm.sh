@@ -172,7 +172,7 @@ function command_deploy {
 
     # Add the helm kubernetes repo
     # Currently required for datago-7454: datadog vault implementation - stable/datadog
-    helm repo add stable https://charts.helm.sh/stable
+    helm repo add datadog https://helm.datadoghq.com
 
     # Make sure Helm repos are up to date.
     helm repo update
@@ -280,35 +280,6 @@ spec:
             kubectl create secret generic datadog-secret --from-literal api-key=$DD_API_KEY --from-literal app-key=$DD_APP_KEY --namespace datadog
         fi
 
-        # logic to handle the datadog-agent upgrade process
-        if [[ $(get_helm_command_for_release "datadog" "datadog-agent") == "install" && $enable_datadog == "yes" ]] ; then
-            echo "installing datadog..."
-            helm install --namespace "datadog" --values ./datadog/datadog-values.yaml \
-                datadog-agent \
-                --set datadog.apiKey=datadog-secret \
-                --set maas.clusterFQDN=${certificate_dns_name} \
-                --set kube-state-metrics.image.tag=v1.8.0 \
-                --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
-                --set kube-state-metrics.collectors.volumeattachments=false \
-                --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
-                --set kube-state-metrics.collectors.networkpolicies=false \
-                --set kube-state-metrics.collectors.verticalpodautoscalers=false \
-                stable/datadog --set targetSystem=linux
-        else
-            echo "upgrading datadog..."
-            helm upgrade --install --namespace "datadog" --values ./upgrade.yaml --values ./datadog/datadog-values.yaml \
-                datadog-agent \
-                --set datadog.apiKeyExistingSecret=datadog-secret \
-                --set maas.clusterFQDN=${certificate_dns_name} \
-                --set kube-state-metrics.image.tag=v1.8.0 \
-                --set kube-state-metrics.collectors.mutatingwebhookconfigurations=false \
-                --set kube-state-metrics.collectors.validatingwebhookconfigurations=false \
-                --set kube-state-metrics.collectors.networkpolicies=false \
-                --set kube-state-metrics.collectors.volumeattachments=false \
-                --set kube-state-metrics.collectors.verticalpodautoscalers=false \
-                stable/datadog --set targetSystem=linux
-        fi
-
         # logic for the datadog-cluster-agent
         if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" && $enable_datadog == "yes" ]] ; then
             echo "installing datadog-cluster-agent"
@@ -325,7 +296,7 @@ spec:
                 --set kube-state-metrics.collectors.verticalpodautoscalers=false \
                 --set clusterAgent.enabled=true \
                 --set clusterAgent.metricsProvider.enabled=true \
-                stable/datadog --set targetSystem=linux
+                datadog/datadog --set targetSystem=linux
         else
             echo "upgrading datadog-cluster-agent..."
             helm upgrade --install --namespace "datadog" --values ./upgrade.yaml --values ./datadog/datadog-values.yaml \
@@ -341,7 +312,7 @@ spec:
                 --set kube-state-metrics.collectors.verticalpodautoscalers=false \
                 --set clusterAgent.enabled=true \
                 --set clusterAgent.metricsProvider.enabled=true \
-                stable/datadog --set targetSystem=linux
+                datadog/datadog --set targetSystem=linux
         fi
     fi
 
