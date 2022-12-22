@@ -48,6 +48,10 @@ resource "google_container_cluster" "gke" {
         channel = "STABLE"
     }
 
+    workload_identity_config {
+        identity_namespace = "${var.project_id}.svc.id.goog"
+    }
+
     subnetwork = google_compute_subnetwork.cluster.self_link
 }
 

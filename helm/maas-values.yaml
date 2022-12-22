@@ -6,6 +6,7 @@ maas:
   kmsKeyRing: "maas-vault-dev"
   kmsCryptoKey: "maas-vault-dev-unseal"
   bucketName: "maas-vault-dev-vault-dev-data"
+  gcpServiceAccount: "vault-test-project"
   datadogDogstatsdIP: "localhost"
 
 global:
@@ -17,6 +18,15 @@ injector:
   enabled: false
 
 server:
+  extraEnvironmentVars:
+    GOOGLE_REGION: us-east1
+    GOOGLE_PROJECT: maas-vault-dev
+    GOOGLE_CREDENTIALS: /vault/userconfig/kms-creds/credentials.json
+    GOOGLE_APPLICATION_CREDENTIALS: /vault/userconfig/kms-creds/credentials.json
+  serviceAccount:
+    create: true
+    annotations:
+      iam.gke.io/gcp-service-account: "{{ .Values.maas.gcpServiceAccount }}"
   livenessProbe:
     enabled: true
   logLevel: "info"
@@ -28,6 +38,8 @@ server:
     # Required for TLS
     - type: secret
       name: vault-server-tls
+    - type: secret
+      name: kms-creds
   shareProcessNamespace: false
   service:
     # Required for GCP Layer 4 Loadbalancer (so Vault can terminate SSL)
@@ -54,6 +66,7 @@ server:
 
       # Required for auto-unseal
       seal "gcpckms" {
+         credentials = "/vault/userconfig/kms-creds/credentials.json"
          project     = "{{ .Values.maas.kmsProject }}"
          region      = "{{ .Values.maas.kmsRegion }}"
          key_ring    = "{{ .Values.maas.kmsKeyRing }}"
