@@ -292,10 +292,10 @@ spec:
         fi
 
         # logic for the datadog-cluster-agent
-        if [[ $(get_helm_command_for_release "datadog" "datadog-cluster-agent") == "install" && $enable_datadog == "yes" ]] ; then
+        if [[ $(get_helm_command_for_release "datadog" "datadog") == "install" && $enable_datadog == "yes" ]] ; then
             echo "installing datadog-cluster-agent"
             helm install --namespace "datadog" --values ./datadog/datadog-values.yaml \
-                datadog-cluster-agent \
+                datadog \
                 --set datadog.apiKey=datadog-secret \
                 --set datadog.appKey=datadog-secret \
                 --set maas.clusterFQDN=${certificate_dns_name} \
@@ -311,7 +311,7 @@ spec:
         else
             echo "upgrading datadog-cluster-agent..."
             helm upgrade --install --namespace "datadog" --values ./upgrade.yaml --values ./datadog/datadog-values.yaml \
-                datadog-cluster-agent \
+                datadog \
                 --set datadog.apiKeyExistingSecret=datadog-secret \
                 --set datadog.appKeyExistingSecret=datadog-secret \
                 --set maas.clusterFQDN=${certificate_dns_name} \
