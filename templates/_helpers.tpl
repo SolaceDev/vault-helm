@@ -630,10 +630,12 @@ Sets extra CSI service account annotations
 Inject extra environment vars in the format key:value, if populated
 */}}
 {{- define "vault.extraEnvironmentVars" -}}
+{{- if eq (.environment | toString) "dev" -}}
 {{- if .extraEnvironmentVars -}}
 {{- range $key, $value := .extraEnvironmentVars }}
 - name: {{ printf "%s" $key | replace "." "_" | upper | quote }}
   value: {{ $value | quote }}
+{{- end }}
 {{- end }}
 {{- end -}}
 {{- end -}}
