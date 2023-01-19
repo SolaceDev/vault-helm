@@ -148,6 +148,166 @@ function get_helm_command_for_release {
 }
 
 #
+# install_cert_manager_and_vault_dev
+#    Install cert-maanger and vault in dev env
+#    Enable workload Identity and define service account in cert-manager and vault
+#
+function install_cert_manager_and_vault_dev {
+    if ! kubectl get serviceaccounts cert-manager -n cert-manager -o yaml | grep "iam.gke.io/gcp-service-account: $(gcloud config get-value core/account)" ; then
+        gcloud iam service-accounts add-iam-policy-binding \
+        --role roles/iam.workloadIdentityUser \
+        --member "serviceAccount:$HELM_project_id.svc.id.goog[cert-manager/cert-manager]" \
+        $(gcloud config get-value core/account)
+        kubectl annotate serviceaccount --namespace=cert-manager cert-manager \
+        "iam.gke.io/gcp-service-account=$(gcloud config get-value core/account)"
+    fi
+
+    # Create a ClusterIssuer resource
+    echo "apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ${cluster_issuer_name}
+spec:
+  acme:
+    # certificates, and issues related to your account.
+    email: nobody@solace.com
+    server: ${cluster_issuer_server}
+    privateKeySecretRef:
+      name: solace-issuer-account-key
+    solvers:
+    - dns01:
+        cloudDNS:
+            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
+             
+    # Create the Vault cluster namespace if it doesn't exist
+    create_namespace_if_missing $HELM_cluster_id
+    if [[ -z $( kubectl get secret kms-creds -n $HELM_cluster_id ) ]] ; then
+      cp ~/.config/gcloud/application_default_credentials.json credentials.json
+      kubectl create secret generic kms-creds --from-file=credentials.json=credentials.json -n $HELM_cluster_id
+      rm -rf credentials.json
+    fi
+
+    echo "apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vault-certificate
+  namespace: ${HELM_cluster_id}
+spec:
+  secretName: vault-server-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: ${cluster_issuer_name}
+  commonName: ${certificate_dns_name}
+  dnsNames:
+  - ${certificate_dns_name}" | kubectl apply --validate=false -f -
+
+      # Run the appropriate Helm command for the Vault release
+    helm upgrade \
+            vault ./vault-helm \
+            ${HELM_UPGRADE_FORCE:+"--force"} \
+            ${HELM_DRY_RUN:+"--dry-run"} \
+            --install \
+            --namespace $HELM_cluster_id \
+            --values ./maas-values.yaml \
+            --set server.environment="dev" \
+            --set maas.gcpProject=$HELM_project_id \
+            --set maas.lbAddress=$HELM_lb_address \
+            --set maas.kmsProject=$HELM_project_id \
+            --set maas.kmsKeyRing=$HELM_project_id \
+            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
+            --set server.gcpServiceAccount=$(gcloud config list account --format "value(core.account)") \
+            --set server.extraEnvironmentVars.GOOGLE_REGION=${HELM_region} \
+            --set server.extraEnvironmentVars.GOOGLE_PROJECT=${HELM_project_id} \
+            --set server.extraEnvironmentVars.GOOGLE_APPLICATION_CREDENTIALS="/vault/userconfig/kms-creds/credentials.json" \
+            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data \
+            --set server.extraContainers[0].image="gcr.io/${HELM_project_id}/maas-vault-logrotate" \
+            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7"
+    
+    gcloud iam service-accounts add-iam-policy-binding \
+        --role roles/iam.workloadIdentityUser \
+        --member "serviceAccount:maas-vault-dev.svc.id.goog[${HELM_cluster_id}/vault]" \
+        $(gcloud config get-value core/account) 
+}
+
+#
+# install_cert_manager_and_vault_prod
+#    Install cert-manager and vault in prod env
+#    create key in service acount for cert-manager
+#
+function install_cert_manager_and_vault_prod {
+     #Create secret for clusterIssuer service account 
+        if ! kubectl get secret clouddns-dns01-solver-svc -n cert-manager ; then
+            gcloud iam service-accounts keys create key.json \
+                --iam-account $(gcloud config get-value core/account)
+            kubectl create secret generic clouddns-dns01-solver-svc \
+                --from-file=key.json -n cert-manager 
+        fi
+
+    # Create a ClusterIssuer resource
+    echo "apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ${cluster_issuer_name}
+spec:
+  acme:
+    # certificates, and issues related to your account.
+    email: nobody@solace.com
+    server: ${cluster_issuer_server}
+    privateKeySecretRef:
+      name: solace-issuer-account-key
+    solvers:
+    - dns01:
+        cloudDNS:
+            project: ${HELM_project_id} 
+            serviceAccountSecretRef:
+              name: clouddns-dns01-solver-svc
+              key: key.json" | kubectl apply --validate=false -f -
+
+    # Create the Vault cluster namespace if it doesn't exist
+    create_namespace_if_missing $HELM_cluster_id
+
+    echo "apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vault-certificate
+  namespace: ${HELM_cluster_id}
+spec:
+  secretName: vault-server-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: ${cluster_issuer_name}
+  commonName: ${certificate_dns_name}
+  dnsNames:
+  - ${certificate_dns_name}" | kubectl apply --validate=false -f -
+
+      # Create the Vault cluster namespace if it doesn't exist
+    create_namespace_if_missing $HELM_cluster_id
+    if [[ -z $( kubectl get secret kms-creds -n $HELM_cluster_id ) ]] ; then
+      cp ~/.config/gcloud/application_default_credentials.json credentials.json
+      kubectl create secret generic kms-creds --from-file=credentials.json=credentials.json -n $HELM_cluster_id
+      rm -rf credentials.json
+    fi
+
+    # Run the appropriate Helm command for the Vault release
+    helm upgrade \
+            vault ./vault-helm \
+            ${HELM_UPGRADE_FORCE:+"--force"} \
+            ${HELM_DRY_RUN:+"--dry-run"} \
+            --install \
+            --namespace $HELM_cluster_id \
+            --values ./maas-values.yaml \
+            --set maas.environment="prod" \
+            --set maas.gcpProject=$HELM_project_id \
+            --set maas.lbAddress=$HELM_lb_address \
+            --set maas.kmsProject=$HELM_project_id \
+            --set maas.kmsKeyRing=$HELM_project_id \
+            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
+            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data \
+            --set server.extraContainers[0].image="gcr.io/${HELM_project_id}/maas-vault-logrotate" \
+            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7"
+}
+
+#
 # command_deploy:
 #   Handles the case where this script is invoked with the deploy command.
 #
@@ -195,55 +355,12 @@ function command_deploy {
         certificate_dns_name=${HELM_cluster_id}.maas-vault-prod.solace.cloud
     fi
 
-    if ! kubectl get serviceaccounts cert-manager -n cert-manager -o yaml | grep "iam.gke.io/gcp-service-account: $(gcloud config get-value core/account)" ; then
-        gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member "serviceAccount:$HELM_project_id.svc.id.goog[cert-manager/cert-manager]" \
-        $(gcloud config get-value core/account)
-        
-        kubectl annotate serviceaccount --namespace=cert-manager cert-manager \
-        "iam.gke.io/gcp-service-account=$(gcloud config get-value core/account)"
+    if [[ ${HELM_project_id} == "maas-vault-dev" ]]; then
+       install_cert_manager_and_vault_dev
+    else
+       install_cert_manager_and_vault_prod
     fi
-
-    # Create a ClusterIssuer resource
-    echo "apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: ${cluster_issuer_name}
-spec:
-  acme:
-    # certificates, and issues related to your account.
-    email: nobody@solace.com
-    server: ${cluster_issuer_server}
-    privateKeySecretRef:
-      name: solace-issuer-account-key
-    solvers:
-    - dns01:
-        cloudDNS:
-            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
-             
-    # Create the Vault cluster namespace if it doesn't exist
-    create_namespace_if_missing $HELM_cluster_id
-    if [[ -z $( kubectl get secret kms-creds -n $HELM_cluster_id ) ]] ; then
-      cp ~/.config/gcloud/application_default_credentials.json credentials.json
-      kubectl create secret generic kms-creds --from-file=credentials.json=credentials.json -n $HELM_cluster_id
-      rm -rf credentials.json
-    fi
-
-    echo "apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: vault-certificate
-  namespace: ${HELM_cluster_id}
-spec:
-  secretName: vault-server-tls
-  issuerRef:
-    kind: ClusterIssuer
-    name: ${cluster_issuer_name}
-  commonName: ${certificate_dns_name}
-  dnsNames:
-  - ${certificate_dns_name}" | kubectl apply --validate=false -f -
-
+       
     # Create a datadog seceret in $HELM_cluster_id for audit log shipment to datadog -
     # Datadog agent is running as a sidecar in the vault continer
     if [[ -z $(kubectl get secrets datadog-vault-secret --namespace  $HELM_cluster_id ) ]]
@@ -255,29 +372,6 @@ spec:
     else
         echo "Datadog API key secret for Datadog agent side car container to vault already exists."
     fi
-
-    # Run the appropriate Helm command for the Vault release
-    helm upgrade \
-            vault ./vault-helm \
-            ${HELM_UPGRADE_FORCE:+"--force"} \
-            ${HELM_DRY_RUN:+"--dry-run"} \
-            --install \
-            --namespace $HELM_cluster_id \
-            --values ./maas-values.yaml \
-            --set maas.gcpProject=$HELM_project_id \
-            --set maas.lbAddress=$HELM_lb_address \
-            --set maas.kmsProject=$HELM_project_id \
-            --set maas.kmsKeyRing=$HELM_project_id \
-            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
-            --set maas.gcpServiceAccount=$(gcloud config list account --format "value(core.account)") \
-            --set maas.bucketName=${HELM_project_id}-${HELM_cluster_id}-data \
-            --set server.extraContainers[0].image="gcr.io/${HELM_project_id}/maas-vault-logrotate" \
-            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7"
-    
-    gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member "serviceAccount:maas-vault-dev.svc.id.goog[${HELM_cluster_id}/vault]" \
-        $(gcloud config get-value core/account)
 
     # If both DD_API_KEY and DD_APP_KEY are set, take that as the signal to install/update datadog
     if [[ $DD_API_KEY ]] && [[ $DD_APP_KEY ]] ; then

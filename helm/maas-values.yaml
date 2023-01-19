@@ -1,5 +1,6 @@
 maas:
   gcpProject: "maas-vault-dev"
+  gcpRegion: "us-east1"
   lbAddress: "35.237.91.67"
   kmsProject: "maas-vault-dev"
   kmsRegion: "global"
@@ -19,14 +20,10 @@ injector:
 
 server:
   extraEnvironmentVars:
-    GOOGLE_REGION: us-east1
-    GOOGLE_PROJECT: maas-vault-dev
-    GOOGLE_CREDENTIALS: /vault/userconfig/kms-creds/credentials.json
-    GOOGLE_APPLICATION_CREDENTIALS: /vault/userconfig/kms-creds/credentials.json
-  serviceAccount:
-    create: true
-    annotations:
-      iam.gke.io/gcp-service-account: "{{ .Values.maas.gcpServiceAccount }}"
+    GOOGLE_REGION: "{{ .Values.maas.gcpRegion }}"
+    GOOGLE_PROJECT: "{{ .Values.maas.gcpProject }}"
+    GOOGLE_CREDENTIALS: "/vault/userconfig/kms-creds/credentials.json"
+    GOOGLE_APPLICATION_CREDENTIALS: "/vault/userconfig/kms-creds/credentials.json"
   livenessProbe:
     enabled: true
   logLevel: "info"
@@ -66,7 +63,9 @@ server:
 
       # Required for auto-unseal
       seal "gcpckms" {
-         credentials = "/vault/userconfig/kms-creds/credentials.json"
+         {{ if eq .Values.maas.kmsProject "maas-vault-dev" }}
+         credentials = "{{ .Values.server.extraEnvironmentVars.GOOGLE_APPLICATION_CREDENTIALS }}"
+         {{ end }}
          project     = "{{ .Values.maas.kmsProject }}"
          region      = "{{ .Values.maas.kmsRegion }}"
          key_ring    = "{{ .Values.maas.kmsKeyRing }}"
