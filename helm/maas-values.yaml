@@ -19,11 +19,6 @@ injector:
   enabled: false
 
 server:
-  extraEnvironmentVars:
-    GOOGLE_REGION: "{{ .Values.maas.gcpRegion }}"
-    GOOGLE_PROJECT: "{{ .Values.maas.gcpProject }}"
-    GOOGLE_CREDENTIALS: "/vault/userconfig/kms-creds/credentials.json"
-    GOOGLE_APPLICATION_CREDENTIALS: "/vault/userconfig/kms-creds/credentials.json"
   livenessProbe:
     enabled: true
   logLevel: "info"
