@@ -50,7 +50,16 @@ resource "google_container_cluster" "gke" {
 
     min_master_version = "1.21.14-gke.4300"
 
-    
+    maintenance_policy {
+        maintenance_exclusion{
+            exclusion_name = "Prevent Cluster auto upgrade to 1.22"
+            start_time = "2023-01-26T00:00:00Z"
+            end_time = "2023-02-24T00:00:00Z"
+            exclusion_options {
+                scope = "NO_UPGRADES"
+            }
+        }
+    }
 
     workload_identity_config {
         identity_namespace = local.identity_namespace
