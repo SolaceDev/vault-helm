@@ -44,9 +44,9 @@ resource "google_container_cluster" "gke" {
         master_ipv4_cidr_block  = "10.0.0.0/28" 
     }
 
-    release_channel {
-        channel = "STABLE"
-    }
+    min_master_version = "1.21.14-gke.4300"
+
+    
 
     workload_identity_config {
         identity_namespace = "${var.project_id}.svc.id.goog"

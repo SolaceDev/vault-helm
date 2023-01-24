@@ -152,6 +152,10 @@ function get_helm_command_for_release {
 #   Handles the case where this script is invoked with the deploy command.
 #
 function command_deploy {
+    
+    # Ensure the gcloud config set to use the proper gcp project.
+    gcloud config set project ${HELM_project_id}
+
     gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Elevating privilege to avoid permissions errors when creating RBACs.
@@ -340,6 +344,10 @@ spec:
 #   Handles the case where this script is invoked with the destroy command.
 #
 function command_destroy {
+    
+    # Ensure the gcloud config set to use the proper gcp project.
+    gcloud config set project ${HELM_project_id}
+
     gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Remove datadog from the cluster

@@ -7,7 +7,7 @@ fi
 
 # Make sure a recognized command was provided.
 case ${command_name:-""} in
-  deploy|destroy|validate|help|vault|vaultinit)
+  deploy|destroy|validate|help|vault|vaultinit|terraformapply|terraformplan)
     ;;
   *)
     echo "ERROR: Unrecognized deploy_local.sh command: ${command_name:-""}"
@@ -134,6 +134,30 @@ function command_deploy {
     export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
 
     ./helm/helm.sh --command_name=deploy --HELM_cluster_id=$HELM_cluster_id --HELM_project_id=$HELM_project_id --HELM_region=$REGION --datadog_api_key=${DD_API_KEY:-} --datadog_app_key=${DD_APP_KEY:-} 
+}
+
+#
+# command_terraformapply:
+#   This function handles running the terraform code for this project under terraform.
+#
+function command_terraformapply {
+    export TF_VAR_cluster_id=$CLUSTER_ID
+    export TF_VAR_project_id=$PROJECT_ID
+    export TF_VAR_region=$REGION
+
+    ./terraform/terraform.sh apply
+}
+
+#
+# command_terraformplan:
+#   This function handles running the terraform code for this project under terraform.
+#
+function command_terraformplan {
+    export TF_VAR_cluster_id=$CLUSTER_ID
+    export TF_VAR_project_id=$PROJECT_ID
+    export TF_VAR_region=$REGION
+
+    ./terraform/terraform.sh plan
 }
 
 function command_validate {
