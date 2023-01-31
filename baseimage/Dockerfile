@@ -36,4 +36,6 @@ RUN wget -q https://releases.hashicorp.com/terraform-provider-google/${TF_GOOGLE
     wget -q https://releases.hashicorp.com/terraform-provider-google-beta/${TF_GOOGLE_BETA_PLUGIN_VERSION}/terraform-provider-google-beta_${TF_GOOGLE_BETA_PLUGIN_VERSION}_linux_amd64.zip && \
     unzip terraform-provider-google-beta_${TF_GOOGLE_BETA_PLUGIN_VERSION}_linux_amd64.zip -d /root/.terraform.d/plugins/linux_amd64
 
+RUN gcloud components install gke-gcloud-auth-plugin
+
 ENTRYPOINT ["/bin/bash"]

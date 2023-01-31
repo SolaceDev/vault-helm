@@ -7,36 +7,41 @@
 ###############################################################################
 
 variable "project_id" {
-    description = "The GCP project ID where the resources will be provisioned."
-    default     = "maas-vault-dev"
+  description = "The GCP project ID where the resources will be provisioned."
+  default     = "maas-vault-dev"
 }
 
 variable "region" {
-    description = "The GCP region where the resources will be provisioned."
-    default     = "us-east1"
+  description = "The GCP region where the resources will be provisioned."
+  default     = "us-east1"
 }
 
 variable "cluster_id" {
-    description = "The unique identifier for the Vault cluster being deployed."
+  description = "The unique identifier for the Vault cluster being deployed."
 }
 
 #
 # Label related variables
 #
 variable "retention_type" {
-    description = "The value for the retention label.  Should be set to production or dev."
-    default     = "dev"
+  description = "The value for the retention label.  Should be set to production or dev."
+  default     = "dev"
 }
 
 #
 # Worker node related variables
 #
 variable "worker_machine_type" {
-    description = "The machine type for worker nodes."
-    default     = "n1-standard-2"
+  description = "The machine type for worker nodes."
+  default     = "n1-standard-2"
 }
 
 variable "worker_disk_size" {
-    description = "The size in GB of the boot disk attached to worker nodes."
-    default     = 10
+  description = "The size in GB of the boot disk attached to worker nodes."
+  default     = 10
+}
+
+variable "min_master_version" {
+  description = "The minimum kubernetes cluster version used to create the cluster"
+  default = "1.21.14-gke.4300"
 }

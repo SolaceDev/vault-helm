@@ -10,8 +10,8 @@
 ###############################################################################
 
 resource "google_storage_bucket" "primary" {
-    name          = "${var.project_id}-${var.cluster_id}-data"
-    force_destroy = true
-    location      = "US"
-    project       = var.project_id
+  name          = "${var.project_id}-${var.cluster_id}-data"
+  force_destroy = true
+  location      = "US"
+  project       = var.project_id
 }

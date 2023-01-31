@@ -111,12 +111,12 @@ fi
 
 # Make sure a recognized command was provided.
 case $command_name in
-  deploy|destroy|validate|help|vault|vaultinit)
+  deploy|destroy|validate|help|vault|vaultinit|terraformapply|terraformplan)
     ;;
   *)
     echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
     echo ""
-    echo "valid options are:  deploy, destroy, validate, help, vault, vaultinit"
+    echo "valid options are:  deploy, destroy, validate, help, vault, vaultinit, terraformapply, terraformplan"
     echo ""
     exit 1
     ;;
