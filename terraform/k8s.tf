@@ -51,14 +51,10 @@ resource "google_container_cluster" "gke" {
   min_master_version = var.min_master_version
 
   workload_identity_config {
-    identity_namespace = "${var.project_id}.svc.id.goog"
+      identity_namespace = local.identity_namespace
   }
 
-    workload_identity_config {
-        identity_namespace = local.identity_namespace
-    }
-
-    subnetwork = google_compute_subnetwork.cluster.self_link
+  subnetwork = google_compute_subnetwork.cluster.self_link
 }
 
 resource "google_container_node_pool" "gke" {
