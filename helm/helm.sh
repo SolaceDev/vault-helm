@@ -151,63 +151,16 @@ function get_helm_command_for_release {
 # install_cert_manager_and_vault_dev
 #    Install cert-maanger and vault 
 #
-function command_deploy {
-    
-    # Ensure the gcloud config set to use the proper gcp project.
-    gcloud config set project ${HELM_project_id}
-
-    gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
-
-    # Elevating privilege to avoid permissions errors when creating RBACs.
-    if ! kubectl get clusterrolebindings/cluster-admin-binding ; then
-        kubectl create clusterrolebinding cluster-admin-binding \
-                --clusterrole=cluster-admin \
-                --user=$(gcloud config get-value core/account)
-    fi
-
-    export HELM_project_id
-    export HELM_lb_address
-
-    # Create the cert-manager namespace if it doesn't exist
-    create_namespace_if_missing "cert-manager"
-
-    # Add the jetstack/cert-manager repo
-    helm repo add jetstack https://charts.jetstack.io
-
-    # Add the helm kubernetes repo
-    # Currently required for datago-7454: datadog vault implementation - stable/datadog
-    helm repo add datadog https://helm.datadoghq.com
-
-    # Make sure Helm repos are up to date.
-    helm repo update
-
-    # Run the appropriate Helm command
-    helm upgrade \
-      "cert-manager" "jetstack/cert-manager" \
-      --install \
-      --namespace "cert-manager" \
-      --version 1.10.1 \
-      --set installCRDs=true
-
-    # Keep checking to see if the cert-manager-webhook deployment is ready, if not sleep for 1 second and repeat.
-    while ! kubectl get deployments/cert-manager-webhook --namespace cert-manager | grep '1/1' > /dev/null ; do
-        sleep 1
-    done
-
-    certificate_dns_name=${HELM_cluster_id}.${HELM_project_id}.mymaas.net
-    if [[ ${HELM_project_id} == "maas-vault-prod" ]]; then
-        certificate_dns_name=${HELM_cluster_id}.maas-vault-prod.solace.cloud
-    fi
-
-    if ! kubectl get serviceaccounts cert-manager -n cert-manager -o yaml | grep "iam.gke.io/gcp-service-account: $(gcloud config get-value core/account)" ; then
-        gcloud iam service-accounts add-iam-policy-binding \
-        --role roles/iam.workloadIdentityUser \
-        --member "serviceAccount:$HELM_project_id.svc.id.goog[cert-manager/cert-manager]" \
-        $(gcloud config get-value core/account)
-        
-        kubectl annotate serviceaccount --namespace=cert-manager cert-manager \
-        "iam.gke.io/gcp-service-account=$(gcloud config get-value core/account)"
-    fi
+function install_cert_manager_and_vault {
+    if [[ ${HELM_project_id} == "maas-vault-dev" ]]; then
+      if ! kubectl get serviceaccounts cert-manager -n cert-manager -o yaml | grep "iam.gke.io/gcp-service-account: $(gcloud config get-value core/account)" ; then
+          gcloud iam service-accounts add-iam-policy-binding \
+          --role roles/iam.workloadIdentityUser \
+          --member "serviceAccount:$HELM_project_id.svc.id.goog[cert-manager/cert-manager]" \
+          $(gcloud config get-value core/account)
+          kubectl annotate serviceaccount --namespace=cert-manager cert-manager \
+          "iam.gke.io/gcp-service-account=$(gcloud config get-value core/account)"
+      fi
 
     # Create a ClusterIssuer resource
     echo "apiVersion: cert-manager.io/v1
@@ -320,6 +273,9 @@ spec:
 #   Handles the case where this script is invoked with the deploy command.
 #
 function command_deploy {
+    # Ensure the gcloud config set to use the proper gcp project.
+    gcloud config set project ${HELM_project_id}
+    
     gcloud container clusters get-credentials ${HELM_cluster_id} --region ${HELM_region} --project ${HELM_project_id}
 
     # Elevating privilege to avoid permissions errors when creating RBACs.
@@ -438,7 +394,6 @@ function command_deploy {
 #   Handles the case where this script is invoked with the destroy command.
 #
 function command_destroy {
-    
     # Ensure the gcloud config set to use the proper gcp project.
     gcloud config set project ${HELM_project_id}
 
