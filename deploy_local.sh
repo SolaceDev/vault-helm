@@ -229,11 +229,13 @@ export DD_API_KEY
 export DD_APP_KEY
 export enable_datadog
 
-image_tag=${VAULT_INSTALLER_IMAGE_TAG:-"$(id -un)-vault:latest"}
+image_tag=`echo "$(id -un)-vault:latest" | tr '[:upper:]' '[:lower:]'`
+image_tag=${VAULT_INSTALLER_IMAGE_TAG:-$image_tag}
+echo $image_tag
 docker_args=${VAULT_INSTALLER_DOCKER_ARGS:-"-it -v $HOME/.config/gcloud:/root/.config/gcloud:rw"}
 
 if [[ -z ${VAULT_INSTALLER_BASE_IMAGE_TAG:-} ]]; then
-  base_image_tag=$(id -un)-vault-base:latest
+  base_image_tag=image_tag
   (cd baseimage && docker build . -q -t ${base_image_tag})
 else
   base_image_tag="${VAULT_INSTALLER_BASE_IMAGE_TAG}"
