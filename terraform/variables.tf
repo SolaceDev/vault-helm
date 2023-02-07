@@ -43,5 +43,5 @@ variable "worker_disk_size" {
 
 variable "min_master_version" {
   description = "The minimum kubernetes cluster version used to create the cluster"
-  default = "1.21.14-gke.4300"
+  default     = "1.21.14-gke.4300"
 }

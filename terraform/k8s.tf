@@ -10,7 +10,7 @@
 ###############################################################################
 
 locals {
-    identity_namespace = "${var.project_id == "maas-vault-dev" ? "${var.project_id}.svc.id.goog": ""}"
+  identity_namespace = var.project_id == "maas-vault-dev" ? "${var.project_id}.svc.id.goog" : ""
 }
 
 resource "google_container_cluster" "gke" {
@@ -51,7 +51,7 @@ resource "google_container_cluster" "gke" {
   min_master_version = var.min_master_version
 
   workload_identity_config {
-      identity_namespace = local.identity_namespace
+    identity_namespace = local.identity_namespace
   }
 
   subnetwork = google_compute_subnetwork.cluster.self_link
@@ -62,6 +62,8 @@ resource "google_container_node_pool" "gke" {
   location    = var.region
   cluster     = google_container_cluster.gke.name
   node_count  = 1
+
+  version = var.min_master_version
 
   management {
     auto_repair  = true
