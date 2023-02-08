@@ -5,6 +5,8 @@ if (( $# == 0 )); then
     set -- help
 fi
 
+distination_vault="https://dry-run-feb-9.maas-vault-dev.mymaas.net:8200"
+
 # assign arguments to variables
 for i in "$@"
 do
@@ -15,6 +17,10 @@ do
     ;;
     -ns=*|--namespace=*)
     namespace="${i#*=}"
+    shift
+    ;;
+    -dv=*|--distination_vault=*)
+    distination_vault="${i#*=}"
     shift
     ;;
   esac
@@ -37,6 +43,7 @@ fi
 
 export namespace
 export command_name
+export distination_vault
 
 # Make sure a recognized command was provided.
 case $command_name in
@@ -61,7 +68,7 @@ function command_getvaulturis {
 function command_updatevaulturis {
     for app in maas-gateway maas-core maas-monitoring
     do
-        kubectl get cm -n $namespace -l app=$app -o name | xargs -I{} kubectl get -n $namespace {} -o yaml  | sed -e 's|https://vault.maas-vault-prod.solace.cloud:8200|https://vault.luay.solace.com:9200|' | kubectl apply -n $namespace -f -
+        kubectl get cm -n $namespace -l app=$app -o name | xargs -I{} kubectl get -n $namespace {} -o yaml  | sed -e 's|https://vault.maas-vault-prod.solace.cloud:8200|$distination_vault|' | kubectl apply -n $namespace -f -
         echo "Verifying vault uri updated for $app"
         kubectl get cm -n $namespace -l app=$app -o name | xargs -I{} kubectl get -n $namespace {} -o json | jq .data | sed 's/\\n/\n/g' | grep vault.uri
     done
