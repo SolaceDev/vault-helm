@@ -68,7 +68,7 @@ function command_getvaulturis {
 function command_updatevaulturis {
     for app in maas-gateway maas-core maas-monitoring
     do
-        kubectl get cm -n $namespace -l app=$app -o name | xargs -I{} kubectl get -n $namespace {} -o yaml  | sed -e 's|https://vault.luay.solace.com:9200|$distination_vault|' | kubectl apply -n $namespace -f -
+        kubectl get cm -n $namespace -l app=$app -o name | xargs -I{} kubectl get -n $namespace {} -o yaml  | sed -e "s|https://vault.maas-vault-prod.solace.cloud:8200|$distination_vault|" | kubectl apply -n $namespace -f -
         echo "Verifying vault uri updated for $app"
         kubectl get cm -n $namespace -l app=$app -o name | xargs -I{} kubectl get -n $namespace {} -o json | jq .data | sed 's/\\n/\n/g' | grep vault.uri
     done
