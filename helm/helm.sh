@@ -152,62 +152,62 @@ function get_helm_command_for_release {
 #    Install cert-maanger and vault 
 #
 function install_cert_manager_and_vault {
-    if [[ ${HELM_project_id} == "maas-vault-dev" ]]; then
-      if ! kubectl get serviceaccounts cert-manager -n cert-manager -o yaml | grep "iam.gke.io/gcp-service-account: $(gcloud config get-value core/account)" ; then
-          gcloud iam service-accounts add-iam-policy-binding \
-          --role roles/iam.workloadIdentityUser \
-          --member "serviceAccount:$HELM_project_id.svc.id.goog[cert-manager/cert-manager]" \
-          $(gcloud config get-value core/account)
-          kubectl annotate serviceaccount --namespace=cert-manager cert-manager \
-          "iam.gke.io/gcp-service-account=$(gcloud config get-value core/account)"
-      fi
+#     if [[ ${HELM_project_id} == "maas-vault-dev" ]]; then
+#       if ! kubectl get serviceaccounts cert-manager -n cert-manager -o yaml | grep "iam.gke.io/gcp-service-account: $(gcloud config get-value core/account)" ; then
+#           gcloud iam service-accounts add-iam-policy-binding \
+#           --role roles/iam.workloadIdentityUser \
+#           --member "serviceAccount:$HELM_project_id.svc.id.goog[cert-manager/cert-manager]" \
+#           $(gcloud config get-value core/account)
+#           kubectl annotate serviceaccount --namespace=cert-manager cert-manager \
+#           "iam.gke.io/gcp-service-account=$(gcloud config get-value core/account)"
+#       fi
 
-    # Create a ClusterIssuer resource
-    echo "apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: ${cluster_issuer_name}
-spec:
-  acme:
-    # certificates, and issues related to your account.
-    email: nobody@solace.com
-    server: ${cluster_issuer_server}
-    privateKeySecretRef:
-      name: solace-issuer-account-key
-    solvers:
-    - dns01:
-        cloudDNS:
-            project: ${HELM_project_id}" | kubectl apply --validate=false -f -
-    else
+#     # Create a ClusterIssuer resource
+#     echo "apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: ${cluster_issuer_name}
+# spec:
+#   acme:
+#     # certificates, and issues related to your account.
+#     email: nobody@solace.com
+#     server: ${cluster_issuer_server}
+#     privateKeySecretRef:
+#       name: solace-issuer-account-key
+#     solvers:
+#     - dns01:
+#         cloudDNS:
+#             project: ${HELM_project_id}" | kubectl apply --validate=false -f -
+#     else
         #Create secret for clusterIssuer service account 
-      if ! kubectl get secret clouddns-dns01-solver-svc -n cert-manager ; then
-          gcloud iam service-accounts keys create key.json \
-              --iam-account $(gcloud config get-value core/account)
-          kubectl create secret generic clouddns-dns01-solver-svc \
-              --from-file=key.json -n cert-manager 
-      fi
+#       if ! kubectl get secret clouddns-dns01-solver-svc -n cert-manager ; then
+#           gcloud iam service-accounts keys create key.json \
+#               --iam-account $(gcloud config get-value core/account)
+#           kubectl create secret generic clouddns-dns01-solver-svc \
+#               --from-file=key.json -n cert-manager 
+#       fi
 
-    # Create a ClusterIssuer resource
-    echo "apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: ${cluster_issuer_name}
-spec:
-  acme:
-    # certificates, and issues related to your account.
-    email: nobody@solace.com
-    server: ${cluster_issuer_server}
-    privateKeySecretRef:
-      name: solace-issuer-account-key
-    solvers:
-    - dns01:
-        cloudDNS:
-            project: ${HELM_project_id} 
-            serviceAccountSecretRef:
-              name: clouddns-dns01-solver-svc
-              key: key.json" | kubectl apply --validate=false -f -
+#     # Create a ClusterIssuer resource
+#     echo "apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: ${cluster_issuer_name}
+# spec:
+#   acme:
+#     # certificates, and issues related to your account.
+#     email: nobody@solace.com
+#     server: ${cluster_issuer_server}
+#     privateKeySecretRef:
+#       name: solace-issuer-account-key
+#     solvers:
+#     - dns01:
+#         cloudDNS:
+#             project: ${HELM_project_id} 
+#             serviceAccountSecretRef:
+#               name: clouddns-dns01-solver-svc
+#               key: key.json" | kubectl apply --validate=false -f -
 
-    fi
+#     fi
              
     # Create the Vault cluster namespace if it doesn't exist
     create_namespace_if_missing $HELM_cluster_id
