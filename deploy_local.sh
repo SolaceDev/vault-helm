@@ -9,6 +9,7 @@ vault_credentials_used=0
 # Set the default project id and region but allow them to be overridden via args
 PROJECT_ID="maas-vault-dev"
 REGION="us-east1"
+BUCKET_NAME=""
 enable_datadog=no
 
 # assign arguments to variables
@@ -33,6 +34,10 @@ do
     ;;
     -dd|--enable_datadog)
     enable_datadog=yes
+    shift
+    ;;
+    -bn=*|--bucket_name=*)
+    BUCKET_NAME="${i#*=}"
     shift
     ;;
     ?*)
@@ -84,6 +89,7 @@ fi
 export CLUSTER_ID
 export PROJECT_ID
 export REGION
+export BUCKET_NAME
 
 #
 # Check if environment variable CI is NOT SET and the PROJECT_ID is set to
@@ -111,12 +117,12 @@ fi
 
 # Make sure a recognized command was provided.
 case $command_name in
-  deploy|destroy|validate|help|vault|vaultinit|terraformapply|terraformplan)
+  deploy|destroy|validate|help|vault|vaultinit|terraformapply|terraformplan|terraformdestroy|installvault)
     ;;
   *)
     echo "ERROR: Unrecognized deploy_local.sh command: $command_name"
     echo ""
-    echo "valid options are:  deploy, destroy, validate, help, vault, vaultinit, terraformapply, terraformplan"
+    echo "valid options are:  deploy, destroy, validate, help, vault, vaultinit, terraformapply, terraformplan,installvault"
     echo ""
     exit 1
     ;;
@@ -256,6 +262,7 @@ docker run \
     -e REGION \
     -e DD_API_KEY \
     -e DD_APP_KEY \
+    -e BUCKET_NAME \
     -e enable_datadog \
     -e command_name="$command_name" \
     "${image_tag}" \
