@@ -217,19 +217,19 @@ function install_cert_manager_and_vault {
       rm -rf credentials.json
     fi
 
-    echo "apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: vault-certificate
-  namespace: ${HELM_cluster_id}
-spec:
-  secretName: vault-server-tls
-  issuerRef:
-    kind: ClusterIssuer
-    name: ${cluster_issuer_name}
-  commonName: ${certificate_dns_name}
-  dnsNames:
-  - ${certificate_dns_name}" | kubectl apply --validate=false -f -
+#     echo "apiVersion: cert-manager.io/v1
+# # kind: Certificate
+# # metadata:
+# #   name: vault-certificate
+# #   namespace: ${HELM_cluster_id}
+# # spec:
+# #   secretName: vault-server-tls
+# #   issuerRef:
+# #     kind: ClusterIssuer
+# #     name: ${cluster_issuer_name}
+# #   commonName: ${certificate_dns_name}
+# #   dnsNames:
+# #   - ${certificate_dns_name}" | kubectl apply --validate=false -f -
 
     if [[ $HELM_project_id == "maas-vault-dev" ]]; then
         GOOGLE_REGION="--set server.extraEnvironmentVars.GOOGLE_REGION=${HELM_region}" 
