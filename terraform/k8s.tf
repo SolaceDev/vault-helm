@@ -9,10 +9,6 @@
 #
 ###############################################################################
 
-locals {
-  identity_namespace = var.project_id == "maas-vault-dev" ? "${var.project_id}.svc.id.goog" : ""
-}
-
 resource "google_container_cluster" "gke" {
   provider = google-beta
 
@@ -50,8 +46,11 @@ resource "google_container_cluster" "gke" {
 
   min_master_version = var.min_master_version
 
-  workload_identity_config {
-    identity_namespace = local.identity_namespace
+  dynamic "workload_identity_config" {
+    for_each = var.project_id == "maas-vault-dev" ? [1] : []
+    content {
+      identity_namespace = "${var.project_id}.svc.id.goog"
+    }
   }
 
   subnetwork = google_compute_subnetwork.cluster.self_link
