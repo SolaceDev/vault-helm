@@ -7,12 +7,12 @@ fi
 
 # Make sure a recognized command was provided.
 case ${command_name:-""} in
-  deploy|destroy|validate|help|vault|vaultinit|terraformapply|terraformplan)
+  deploy|destroy|validate|help|vault|vaultinit|terraformapply|terraformplan|terraformdestroy|installvault)
     ;;
   *)
     echo "ERROR: Unrecognized deploy_local.sh command: ${command_name:-""}"
     echo ""
-    echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit"
+    echo "valid options are:  deploy|destroy|validate|help|vault|vaultinit|installvault"
     echo ""
     exit 1
     ;;
@@ -119,6 +119,37 @@ function command_destroy {
 }
 
 #
+# command_destroy:
+#   This function handles running the script actions for the destroy command.
+#
+function command_terraformdestroy {
+
+  if [ -z "$CLUSTER_ID" ]; then
+    echo "deploy.sh error:"
+    echo "cluster_id was not provided."
+    echo "Please run your command again:"
+    echo ""
+    echo "./deploy_local.sh --command_name=terraformdestroy --cluster-id=mycluster"
+    exit 1
+  fi
+  if [ -z "$REGION" ]; then
+    echo "Region was not provided; using the default of us-east1"
+    REGION="us-east1"
+  fi
+  if [ -z "$PROJECT_ID" ]; then
+    echo "project_id was not provided; using the default of maas-vault-dev"
+    PROJECT_ID="maas-vault-dev"
+  fi
+
+  
+  export TF_VAR_cluster_id=$CLUSTER_ID
+  export HELM_cluster_id=$CLUSTER_ID
+  export TF_VAR_project_id=$PROJECT_ID
+
+  ./terraform/terraform.sh destroy
+}
+
+#
 # command_deploy:
 #   This function handles running the script actions for the deploy command.
 #
@@ -219,6 +250,45 @@ function command_vault {
 
   echo "Running vault $@"
   vault $@
+}
+
+function command_installvault {  
+    export TF_VAR_cluster_id=$CLUSTER_ID
+    export TF_VAR_project_id=$PROJECT_ID
+    export TF_VAR_region=$REGION
+
+    ./terraform/terraform.sh apply
+
+    export HELM_cluster_id=$CLUSTER_ID
+    export HELM_project_id=$(./terraform/terraform.sh output project_id | tr -d '\r')
+    export HELM_lb_address=$(./terraform/terraform.sh output static_ip_address | tr -d '\r')
+
+  gcloud config set project ${HELM_project_id}
+
+  gcloud container clusters get-credentials ${HELM_cluster_id} --region ${REGION} --project ${HELM_project_id}
+
+  if [ -z $BUCKET_NAME ] ;then
+      VAULT_BUCKET_NAME=${HELM_project_id}-${HELM_cluster_id}-data
+  else
+      VAULT_BUCKET_NAME=$BUCKET_NAME
+  fi
+
+  # Run the appropriate Helm command for the Vault release
+    helm upgrade \
+            vault ./helm/vault-helm \
+            ${HELM_UPGRADE_FORCE:+"--force"} \
+            ${HELM_DRY_RUN:+"--dry-run"} \
+            --install \
+            --namespace $HELM_cluster_id \
+            --values ./helm/maas-values.yaml \
+            --set maas.gcpProject=$HELM_project_id \
+            --set maas.lbAddress=$HELM_lb_address \
+            --set maas.kmsProject=$HELM_project_id \
+            --set maas.kmsKeyRing=$HELM_project_id \
+            --set maas.kmsCryptoKey=${HELM_project_id}-unseal \
+            --set maas.bucketName=$VAULT_BUCKET_NAME \
+            --set server.extraContainers[0].image="gcr.io/${HELM_project_id}/maas-vault-logrotate" \
+            --set server.extraContainers[1].image="gcr.io/${HELM_project_id}/datadog-agent:7"
 }
 
 # Invoke the appropriate command_... function, based on the value of the

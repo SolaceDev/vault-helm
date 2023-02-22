@@ -179,7 +179,7 @@ spec:
         cloudDNS:
             project: ${HELM_project_id}" | kubectl apply --validate=false -f -
     else
-        #Create secret for clusterIssuer service account 
+       # Create secret for clusterIssuer service account 
       if ! kubectl get secret clouddns-dns01-solver-svc -n cert-manager ; then
           gcloud iam service-accounts keys create key.json \
               --iam-account $(gcloud config get-value core/account)
