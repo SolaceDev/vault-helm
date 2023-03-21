@@ -31,6 +31,7 @@ load _helpers
   [ "${actual}" = "true" ]
 }
 
+
 @test "injector/DisruptionBudget: test is apiVersion is set correctly < version 1.21 of kube" {
   cd `chart_dir`
   local actual=$(helm template \
