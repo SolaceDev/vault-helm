@@ -1,5 +1,6 @@
 ## Unreleased
 
+
 ## 0.22.0 (September 8th, 2022)
 
 Features:
@@ -142,7 +143,6 @@ Improvements:
 * Add `server.ingress.activeService` to configure if the ingress should use the active service [GH-570](https://github.com/hashicorp/vault-helm/pull/570)
 * Add `server.route.activeService` to configure if the route should use the active service [GH-570](https://github.com/hashicorp/vault-helm/pull/570)
 * Support configuring `global.imagePullSecrets` from a string array [GH-576](https://github.com/hashicorp/vault-helm/pull/576)
-
 
 ## 0.13.0 (June 17th, 2021)
 

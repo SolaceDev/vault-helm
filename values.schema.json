@@ -370,6 +370,9 @@
                 "podDisruptionBudget": {
                     "type": "object"
                 },
+                "podDisruptionBudget": {
+                    "type": "object"
+                },
                 "port": {
                     "type": "integer"
                 },
