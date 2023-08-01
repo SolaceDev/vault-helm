@@ -184,21 +184,10 @@ injector:
   #      vault-sidecar-injector: enabled
   objectSelector: {}
 
-  # Deprecated: please use 'webhook.objectSelector' instead
-  # objectSelector is the selector for restricting the webhook to only
-  # specific labels.
-  # See https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#matching-requests-objectselector
-  # for more details.
-  # Example:
-  # objectSelector:
-  #    matchLabels:
-  #      vault-sidecar-injector: enabled
-  objectSelector: {}
-
   # Deprecated: please use 'webhook.annotations' instead
   # Extra annotations to attach to the webhook
   webhookAnnotations: {}
-
+  
   certs:
     # secretName is the name of the secret that has the TLS certificate and
     # private key to serve the injector webhook. If this is null, then the
@@ -869,8 +858,6 @@ server:
     # YAML-formatted multi-line templated string map of the annotations to apply
     # to the statefulSet.
     annotations: {}
-  # A boolean flag to setup logrotate as a side car continer
-  logrotate: null
 
     # Set the pod and container security contexts.
     # If not set, these will default to, and for *not* OpenShift:

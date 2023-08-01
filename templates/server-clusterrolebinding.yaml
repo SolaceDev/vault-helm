@@ -22,4 +22,3 @@ subjects:
   name: {{ template "vault.serviceAccount.name" . }}
   namespace: {{ .Release.Namespace }}
 {{ end }}
-{{ end }}
