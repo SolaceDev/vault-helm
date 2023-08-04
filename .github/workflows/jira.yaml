@@ -62,11 +62,7 @@ jobs:
       uses: atlassian/gajira-transition@v2.0.1
       with:
         issue: ${{ steps.search.outputs.issue }}
-<<<<<<< HEAD
         transition: Closed
-=======
-        transition: Close
->>>>>>> 7f26aa5 (Datago 30304/upgrading vault to 1.9.2 (#14))
 
     - name: Reopen ticket
       if: github.event.action == 'reopened' && steps.search.outputs.issue

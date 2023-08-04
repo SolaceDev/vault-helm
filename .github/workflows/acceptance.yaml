@@ -1,40 +1,20 @@
 name: Acceptance Tests
 
-<<<<<<< HEAD
 on: [push, workflow_dispatch]
-=======
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: {}
->>>>>>> 7f26aa5 (Datago 30304/upgrading vault to 1.9.2 (#14))
 
 jobs:
   kind:
     strategy:
       fail-fast: false
       matrix:
-<<<<<<< HEAD
-<<<<<<< HEAD
         kind-k8s-version: [1.16.15, 1.20.15, 1.21.14, 1.22.15, 1.23.12, 1.24.6, 1.25.3]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-=======
-        kind-k8s-version: [1.14.10, 1.19.11, 1.20.7, 1.21.2, 1.22.4]
-=======
-        kind-k8s-version: [1.16.15, 1.20.15, 1.21.10, 1.22.7, 1.23.4]
->>>>>>> c575574 (feat(DATAGO-30305): Upgrade vault server to 1.10.x (#16))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
->>>>>>> 7f26aa5 (Datago 30304/upgrading vault to 1.9.2 (#14))
       - name: Setup test tools
         uses: ./.github/workflows/setup-test-tools
 
       - name: Create K8s Kind Cluster
-<<<<<<< HEAD
         uses: helm/kind-action@v1.4.0
         with:
           config: test/kind/config.yaml
@@ -42,18 +22,5 @@ jobs:
           version: v0.16.0
 
       - run: bats --tap --timing ./test/acceptance
-=======
-        uses: helm/kind-action@v1.2.0
-        with:
-          config: test/kind/config.yaml
-          node_image: kindest/node:v${{ matrix.kind-k8s-version }}
-
-      # Skip CSI tests if K8s version < 1.16.x
-      - run: echo K8S_MINOR=$(kubectl version -o json | jq -r .serverVersion.minor) >> $GITHUB_ENV
-      - if: ${{ env.K8S_MINOR < 16 }}
-        run: echo "SKIP_CSI=true" >> $GITHUB_ENV
-
-      - run: bats ./test/acceptance -t
->>>>>>> 7f26aa5 (Datago 30304/upgrading vault to 1.9.2 (#14))
         env:
           VAULT_LICENSE_CI: ${{ secrets.VAULT_LICENSE_CI }}
