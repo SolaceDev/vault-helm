@@ -1,5 +1,43 @@
 ## Unreleased
 
+
+## 0.22.0 (September 8th, 2022)
+
+Features:
+* Add PrometheusOperator support for collecting Vault server metrics. [GH-772](https://github.com/hashicorp/vault-helm/pull/772)
+
+Changes:
+* `vault-k8s` to 1.0.0 [GH-784](https://github.com/hashicorp/vault-helm/pull/784)
+* Test against Kubernetes 1.25 [GH-784](https://github.com/hashicorp/vault-helm/pull/784)
+* `vault` updated to 1.11.3 [GH-785](https://github.com/hashicorp/vault-helm/pull/785)
+
+## 0.21.0 (August 10th, 2022)
+
+CHANGES:
+* `vault-k8s` updated to 0.17.0. [GH-771](https://github.com/hashicorp/vault-helm/pull/771)
+* `vault-csi-provider` updated to 1.2.0 [GH-771](https://github.com/hashicorp/vault-helm/pull/771)
+* `vault` updated to 1.11.2 [GH-771](https://github.com/hashicorp/vault-helm/pull/771)
+* Start testing against Kubernetes 1.24. [GH-744](https://github.com/hashicorp/vault-helm/pull/744)
+* Deprecated `injector.externalVaultAddr`. Added `global.externalVaultAddr`, which applies to both the Injector and the CSI Provider. [GH-745](https://github.com/hashicorp/vault-helm/pull/745)
+* CSI Provider pods now set the `VAULT_ADDR` environment variable to either the internal Vault service or the configured external address. [GH-745](https://github.com/hashicorp/vault-helm/pull/745)
+
+Features:
+* server: Add `server.statefulSet.securityContext` to override pod and container `securityContext`. [GH-767](https://github.com/hashicorp/vault-helm/pull/767)
+* csi: Add `csi.daemonSet.securityContext` to override pod and container `securityContext`. [GH-767](https://github.com/hashicorp/vault-helm/pull/767)
+* injector: Add `injector.securityContext` to override pod and container `securityContext`. [GH-750](https://github.com/hashicorp/vault-helm/pull/750) and [GH-767](https://github.com/hashicorp/vault-helm/pull/767)
+* Add `server.service.activeNodePort` and `server.service.standbyNodePort` to specify the `nodePort` for active and standby services. [GH-610](https://github.com/hashicorp/vault-helm/pull/610)
+* Support for setting annotations on the injector's serviceAccount [GH-753](https://github.com/hashicorp/vault-helm/pull/753)
+
+## 0.20.1 (May 25th, 2022)
+CHANGES:
+* `vault-k8s` updated to 0.16.1 [GH-739](https://github.com/hashicorp/vault-helm/pull/739)
+
+Improvements:
+* Mutating webhook will no longer target the agent injector pod [GH-736](https://github.com/hashicorp/vault-helm/pull/736)
+
+Bugs:
+* `vault` service account is now created even if the server is set to disabled, as per before 0.20.0 [GH-737](https://github.com/hashicorp/vault-helm/pull/737)
+
 ## 0.20.0 (May 16th, 2022)
 
 CHANGES:
@@ -9,8 +47,10 @@ CHANGES:
 * CSI provider default image to 1.1.0
 * Vault K8s default image to 0.16.0
 * Earliest Kubernetes version tested is now 1.16
+* Helm 3.6+ now required
+
+Features:
 * Support topologySpreadConstraints in server and injector. [GH-652](https://github.com/hashicorp/vault-helm/pull/652)
-* Maintain default MutatingWebhookConfiguration values from `v1beta1` [GH-692](https://github.com/hashicorp/vault-helm/pull/692)
 
 Improvements:
 * CSI: Set `extraLabels` for daemonset, pods, and service account [GH-690](https://github.com/hashicorp/vault-helm/pull/690)
@@ -19,6 +59,7 @@ Improvements:
 * Make the Cluster Address (CLUSTER_ADDR) configurable [GH-629](https://github.com/hashicorp/vault-helm/pull/709)
 * server: Make `publishNotReadyAddresses` configurable for services [GH-694](https://github.com/hashicorp/vault-helm/pull/694)
 * server: Allow config to be defined as a YAML object in the values file [GH-684](https://github.com/hashicorp/vault-helm/pull/684)
+* Maintain default MutatingWebhookConfiguration values from `v1beta1` [GH-692](https://github.com/hashicorp/vault-helm/pull/692)
 
 ## 0.19.0 (January 20th, 2022)
 

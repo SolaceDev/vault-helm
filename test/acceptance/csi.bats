@@ -12,7 +12,6 @@ check_skip_csi() {
   check_skip_csi
 
   cd `chart_dir`
-  
   kubectl delete namespace acceptance --ignore-not-found=true
   kubectl create namespace acceptance
 
