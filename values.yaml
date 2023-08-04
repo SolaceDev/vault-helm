@@ -239,7 +239,7 @@ injector:
   # Deprecated: please use 'webhook.annotations' instead
   # Extra annotations to attach to the webhook
   webhookAnnotations: {}
-
+  
   certs:
     # secretName is the name of the secret that has the TLS certificate and
     # private key to serve the injector webhook. If this is null, then the
@@ -345,7 +345,6 @@ injector:
   serviceAccount:
     # Extra annotations to attach to the injector serviceAccount
     annotations: {}
-
   # A disruption budget limits the number of pods of a replicated application
   # that are down simultaneously from voluntary disruptions
   podDisruptionBudget: {}
@@ -942,8 +941,23 @@ server:
     # YAML-formatted multi-line templated string map of the annotations to apply
     # to the statefulSet.
     annotations: {}
-  # A boolean flag to setup logrotate as a side car continer
-  logrotate: null
+
+    # Set the pod and container security contexts.
+    # If not set, these will default to, and for *not* OpenShift:
+    # pod:
+    #   runAsNonRoot: true
+    #   runAsGroup: {{ .Values.server.gid | default 1000 }}
+    #   runAsUser: {{ .Values.server.uid | default 100 }}
+    #   fsGroup: {{ .Values.server.gid | default 1000 }}
+    # container:
+    #   allowPrivilegeEscalation: false
+    #
+    # If not set, these will default to, and for OpenShift:
+    # pod: {}
+    # container: {}
+    securityContext:
+      pod: {}
+      container: {}
 
     # Set the pod and container security contexts.
     # If not set, these will default to, and for *not* OpenShift:
