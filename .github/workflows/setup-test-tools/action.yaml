@@ -6,7 +6,6 @@ runs:
   steps:
     - uses: actions/setup-node@v2
       with:
-<<<<<<< HEAD
         node-version: '16'
     - run: npm install -g bats@${BATS_VERSION}
       shell: bash
@@ -17,15 +16,5 @@ runs:
     - uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-=======
-        node-version: '14'
-    - run: npm install -g bats@${BATS_VERSION}
-      shell: bash
-      env:
-        BATS_VERSION: '1.5.0'
-    - run: bats -v
-      shell: bash
-    - uses: actions/setup-python@v2
->>>>>>> 7f26aa5 (Datago 30304/upgrading vault to 1.9.2 (#14))
     - run: pip install yq
       shell: bash
