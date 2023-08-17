@@ -4,7 +4,6 @@ CLOUDSDK_CORE_PROJECT?=vault-helm-dev-246514
 # set to run a single test - e.g acceptance/server-ha-enterprise-dr.bats
 ACCEPTANCE_TESTS?=acceptance
 
-
 # filter bats unit tests to run.
 UNIT_TESTS_FILTER?='.*'
 
