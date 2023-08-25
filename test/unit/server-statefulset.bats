@@ -1806,3 +1806,193 @@ load _helpers
       yq -r '.spec.template.spec.hostNetwork' | tee /dev/stderr)
   [ "${actual}" = "true" ]
 }
+
+#--------------------------------------------------------------------
+# extraPorts
+
+@test "server/standalone-StatefulSet: adds extra ports" {
+  cd `chart_dir`
+
+  # Test that it defines it
+  local object=$(helm template \
+      --show-only templates/server-statefulset.yaml  \
+      --set 'server.extraPorts[0].containerPort=1111' \
+      --set 'server.extraPorts[0].name=foo' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].ports[] | select(.name == "foo")' | tee /dev/stderr)
+
+  local actual=$(echo $object |
+      yq -r '.containerPort' | tee /dev/stderr)
+  [ "${actual}" = "1111" ]
+
+  local actual=$(echo $object |
+      yq -r '.name' | tee /dev/stderr)
+  [ "${actual}" = "foo" ]
+}
+
+#--------------------------------------------------------------------
+# readinessProbe
+
+@test "server/StatefulSet: server.readinessProbe.port is set" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.readinessProbe.enabled=true' \
+      --set 'server.readinessProbe.path=foo' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].readinessProbe.httpGet.port' | tee /dev/stderr)
+  [ "${actual}" = "8200" ]
+}
+
+
+#--------------------------------------------------------------------
+# livenessProbe
+
+@test "server/StatefulSet: server.livenessProbe.port is set" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.livenessProbe.enabled=true' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].livenessProbe.httpGet.port' | tee /dev/stderr)
+  [ "${actual}" = "8200" ]
+}
+
+#--------------------------------------------------------------------
+# enterprise license autoload support
+@test "server/StatefulSet: adds volume for license secret when enterprise license secret name and key are provided" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      -s templates/server-statefulset.yaml  \
+      --set 'server.enterpriseLicense.secretName=foo' \
+      --set 'server.enterpriseLicense.secretKey=bar' \
+      . | tee /dev/stderr |
+      yq -r -c '.spec.template.spec.volumes[] | select(.name == "vault-license")' | tee /dev/stderr)
+      [ "${actual}" = '{"name":"vault-license","secret":{"secretName":"foo","defaultMode":288}}' ]
+}
+
+@test "server/StatefulSet: adds volume mount for license secret when enterprise license secret name and key are provided" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      -s templates/server-statefulset.yaml  \
+      --set 'server.enterpriseLicense.secretName=foo' \
+      --set 'server.enterpriseLicense.secretKey=bar' \
+      . | tee /dev/stderr |
+      yq -r -c '.spec.template.spec.containers[0].volumeMounts[] | select(.name == "vault-license")' | tee /dev/stderr)
+      [ "${actual}" = '{"name":"vault-license","mountPath":"/vault/license","readOnly":true}' ]
+}
+
+@test "server/StatefulSet: adds env var for license path when enterprise license secret name and key are provided" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      -s templates/server-statefulset.yaml  \
+      --set 'server.enterpriseLicense.secretName=foo' \
+      --set 'server.enterpriseLicense.secretKey=bar' \
+      . | tee /dev/stderr |
+      yq -r -c '.spec.template.spec.containers[0].env[] | select(.name == "VAULT_LICENSE_PATH")' | tee /dev/stderr)
+      [ "${actual}" = '{"name":"VAULT_LICENSE_PATH","value":"/vault/license/bar"}' ]
+}
+
+@test "server/StatefulSet: blank secretName does not set env var" {
+  cd `chart_dir`
+
+  # setting secretName=null
+  local actual=$(helm template \
+      -s templates/server-statefulset.yaml  \
+      --set 'server.enterpriseLicense.secretName=null' \
+      --set 'server.enterpriseLicense.secretKey=bar' \
+      . | tee /dev/stderr |
+      yq -r -c '.spec.template.spec.containers[0].env[] | select(.name == "VAULT_LICENSE_PATH")' | tee /dev/stderr)
+      [ "${actual}" = '' ]
+
+  # omitting secretName
+  local actual=$(helm template \
+      -s templates/server-statefulset.yaml  \
+      --set 'server.enterpriseLicense.secretKey=bar' \
+      . | tee /dev/stderr |
+      yq -r -c '.spec.template.spec.containers[0].env[] | select(.name == "VAULT_LICENSE_PATH")' | tee /dev/stderr)
+      [ "${actual}" = '' ]
+}
+
+#--------------------------------------------------------------------
+# securityContext
+
+@test "server/standalone-StatefulSet: default statefulSet.securityContext.pod" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.securityContext' | tee /dev/stderr)
+  [ ! "${actual}" = "null" ]
+}
+
+@test "server/standalone-StatefulSet: default statefulSet.securityContext.container" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].securityContext' | tee /dev/stderr)
+  [ ! "${actual}" = "null" ]
+}
+
+@test "server/standalone-StatefulSet: specify statefulSet.securityContext.pod yaml" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.statefulSet.securityContext.pod.foo=bar' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.securityContext.foo' | tee /dev/stderr)
+  [ "${actual}" = "bar" ]
+}
+
+@test "server/standalone-StatefulSet: specify statefulSet.securityContext.container yaml" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.statefulSet.securityContext.container.foo=bar' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].securityContext.foo' | tee /dev/stderr)
+  [ "${actual}" = "bar" ]
+}
+
+@test "server/standalone-StatefulSet: specify statefulSet.securityContext.pod yaml string" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.statefulSet.securityContext.pod=foo: bar' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.securityContext.foo' | tee /dev/stderr)
+  [ "${actual}" = "bar" ]
+}
+
+@test "server/standalone-StatefulSet: specify statefulSet.securityContext.container yaml string" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.statefulSet.securityContext.container=foo: bar' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].securityContext.foo' | tee /dev/stderr)
+  [ "${actual}" = "bar" ]
+}
+
+#--------------------------------------------------------------------
+# hostNetwork
+
+@test "server/StatefulSet: server.hostNetwork not set" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.hostNetwork' | tee /dev/stderr)
+  [ "${actual}" = "false" ]
+}
+
+@test "server/StatefulSet: server.hostNetwork is set" {
+  cd `chart_dir`
+  local actual=$(helm template \
+      --show-only templates/server-statefulset.yaml \
+      --set 'server.hostNetwork=true' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.hostNetwork' | tee /dev/stderr)
+  [ "${actual}" = "true" ]
+}

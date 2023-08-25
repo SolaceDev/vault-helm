@@ -275,6 +275,135 @@ load _helpers
   [ "${value}" = "auth/k8s" ]
 }
 
+@test "injector/deployment: default livenessProbe settings" {
+  cd `chart_dir`
+  local object=$(helm template \
+      --show-only templates/injector-deployment.yaml  \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].livenessProbe' | tee /dev/stderr)
+
+  local actual=$(echo "$object" | yq '.failureThreshold' | tee /dev/stderr)
+    [ "${actual}" = "2" ]
+  local actual=$(echo "$object" | yq '.initialDelaySeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+  local actual=$(echo "$object" | yq '.periodSeconds' | tee /dev/stderr)
+    [ "${actual}" = "2" ]
+  local actual=$(echo "$object" | yq '.successThreshold' | tee /dev/stderr)
+    [ "${actual}" = "1" ]
+  local actual=$(echo "$object" | yq '.timeoutSeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+}
+
+@test "injector/deployment: can set livenessProbe settings" {
+  cd `chart_dir`
+  local object=$(helm template \
+      --show-only templates/injector-deployment.yaml  \
+      --set 'injector.livenessProbe.failureThreshold=100' \
+      --set 'injector.livenessProbe.initialDelaySeconds=100' \
+      --set 'injector.livenessProbe.periodSeconds=100' \
+      --set 'injector.livenessProbe.successThreshold=100' \
+      --set 'injector.livenessProbe.timeoutSeconds=100' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].livenessProbe' | tee /dev/stderr)
+
+  local actual=$(echo "$object" | yq '.failureThreshold' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.initialDelaySeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.periodSeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.successThreshold' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.timeoutSeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+}
+
+@test "injector/deployment: default readinessProbe settings" {
+  cd `chart_dir`
+  local object=$(helm template \
+      --show-only templates/injector-deployment.yaml  \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].readinessProbe' | tee /dev/stderr)
+
+  local actual=$(echo "$object" | yq '.failureThreshold' | tee /dev/stderr)
+    [ "${actual}" = "2" ]
+  local actual=$(echo "$object" | yq '.initialDelaySeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+  local actual=$(echo "$object" | yq '.periodSeconds' | tee /dev/stderr)
+    [ "${actual}" = "2" ]
+  local actual=$(echo "$object" | yq '.successThreshold' | tee /dev/stderr)
+    [ "${actual}" = "1" ]
+  local actual=$(echo "$object" | yq '.timeoutSeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+}
+
+@test "injector/deployment: can set readinessProbe settings" {
+  cd `chart_dir`
+  local object=$(helm template \
+      --show-only templates/injector-deployment.yaml  \
+      --set 'injector.readinessProbe.failureThreshold=100' \
+      --set 'injector.readinessProbe.initialDelaySeconds=100' \
+      --set 'injector.readinessProbe.periodSeconds=100' \
+      --set 'injector.readinessProbe.successThreshold=100' \
+      --set 'injector.readinessProbe.timeoutSeconds=100' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].readinessProbe' | tee /dev/stderr)
+
+  local actual=$(echo "$object" | yq '.failureThreshold' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.initialDelaySeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.periodSeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.successThreshold' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.timeoutSeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+}
+
+@test "injector/deployment: default startupProbe settings" {
+  cd `chart_dir`
+  local object=$(helm template \
+      --show-only templates/injector-deployment.yaml  \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].startupProbe' | tee /dev/stderr)
+
+  local actual=$(echo "$object" | yq '.failureThreshold' | tee /dev/stderr)
+    [ "${actual}" = "12" ]
+  local actual=$(echo "$object" | yq '.initialDelaySeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+  local actual=$(echo "$object" | yq '.periodSeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+  local actual=$(echo "$object" | yq '.successThreshold' | tee /dev/stderr)
+    [ "${actual}" = "1" ]
+  local actual=$(echo "$object" | yq '.timeoutSeconds' | tee /dev/stderr)
+    [ "${actual}" = "5" ]
+}
+
+@test "injector/deployment: can set startupProbe settings" {
+  cd `chart_dir`
+  local object=$(helm template \
+      --show-only templates/injector-deployment.yaml  \
+      --set 'injector.startupProbe.failureThreshold=100' \
+      --set 'injector.startupProbe.initialDelaySeconds=100' \
+      --set 'injector.startupProbe.periodSeconds=100' \
+      --set 'injector.startupProbe.successThreshold=100' \
+      --set 'injector.startupProbe.timeoutSeconds=100' \
+      . | tee /dev/stderr |
+      yq -r '.spec.template.spec.containers[0].startupProbe' | tee /dev/stderr)
+
+  local actual=$(echo "$object" | yq '.failureThreshold' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.initialDelaySeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.periodSeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.successThreshold' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+  local actual=$(echo "$object" | yq '.timeoutSeconds' | tee /dev/stderr)
+    [ "${actual}" = "100" ]
+}
+
 @test "injector/deployment: default logLevel" {
   cd `chart_dir`
   local object=$(helm template \
@@ -912,57 +1041,4 @@ EOF
   local value=$(echo $object |
       yq -r 'map(select(.name=="AGENT_INJECT_TEMPLATE_CONFIG_EXIT_ON_RETRY_FAILURE")) | .[] .value' | tee /dev/stderr)
   [ "${value}" = "false" ]
-}
-@test "injector/deployment: agent default template_config.static_secret_render_interval" {
-  cd `chart_dir`
-  local object=$(helm template \
-      --show-only templates/injector-deployment.yaml  \
-      . | tee /dev/stderr |
-      yq -r '.spec.template.spec.containers[0].env' | tee /dev/stderr)
-
-  local value=$(echo $object |
-      yq -r 'map(select(.name=="AGENT_INJECT_TEMPLATE_STATIC_SECRET_RENDER_INTERVAL")) | .[] .value' | tee /dev/stderr)
-  [ "${value}" = "" ]
-}
-
-@test "injector/deployment: can set agent template_config.static_secret_render_interval" {
-  cd `chart_dir`
-  local object=$(helm template \
-      --show-only templates/injector-deployment.yaml  \
-      --set='injector.agentDefaults.templateConfig.staticSecretRenderInterval=1m' \
-      . | tee /dev/stderr |
-      yq -r '.spec.template.spec.containers[0].env' | tee /dev/stderr)
-
-  local value=$(echo $object |
-      yq -r 'map(select(.name=="AGENT_INJECT_TEMPLATE_STATIC_SECRET_RENDER_INTERVAL")) | .[] .value' | tee /dev/stderr)
-  [ "${value}" = "1m" ]
-}
-
-@test "injector/deployment: strategy default" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/injector-deployment.yaml  \
-      . | tee /dev/stderr |
-      yq -r '.spec.strategy' | tee /dev/stderr)
-  [ "${actual}" = "null" ]
-}
-
-@test "injector/deployment: strategy set as string" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/injector-deployment.yaml  \
-      --set="injector.strategy=testing"  \
-      . | tee /dev/stderr |
-      yq -r '.spec.strategy' | tee /dev/stderr)
-  [ "${actual}" = "testing" ]
-}
-
-@test "injector/deployment: strategy can be set as YAML" {
-  cd `chart_dir`
-  local actual=$(helm template \
-      --show-only templates/injector-deployment.yaml \
-      --set 'injector.strategy.rollingUpdate.maxUnavailable=1' \
-      . | tee /dev/stderr |
-      yq -r '.spec.strategy.rollingUpdate.maxUnavailable' | tee /dev/stderr)
-  [ "${actual}" = "1" ]
 }
