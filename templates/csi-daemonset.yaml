@@ -45,6 +45,8 @@ spec:
       {{- end }}
       serviceAccountName: {{ template "vault.fullname" . }}-csi-provider
       {{- template "csi.pod.tolerations" . }}
+      {{- template "csi.pod.nodeselector" . }}
+      {{- template "csi.pod.affinity" . }}
       containers:
         - name: {{ include "vault.name" . }}-csi-provider
           {{ template "csi.resources" . }}
@@ -54,6 +56,11 @@ spec:
           args:
             - --endpoint=/provider/vault.sock
             - --debug={{ .Values.csi.debug }}
+            {{- if .Values.csi.hmacSecretName }}
+            - --hmac-secret-name={{ .Values.csi.hmacSecretName }}
+            {{- else }}
+            - --hmac-secret-name={{- include "vault.name" . }}-csi-provider-hmac-key
+            {{- end }}
             {{- if .Values.csi.extraArgs }}
             {{- toYaml .Values.csi.extraArgs | nindent 12 }}
             {{- end }}
@@ -62,13 +69,6 @@ spec:
             {{- if eq (.Values.csi.agent.enabled | toString) "true" }}
               value: "unix:///var/run/vault/agent.sock"
             {{- else if .Values.global.externalVaultAddr }}
-              value: "{{ .Values.global.externalVaultAddr }}"
-            {{- else }}
-              value: {{ include "vault.scheme" . }}://{{ template "vault.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.server.service.port }}
-            {{- end }}
-          env:
-            - name: VAULT_ADDR
-            {{- if .Values.global.externalVaultAddr }}
               value: "{{ .Values.global.externalVaultAddr }}"
             {{- else }}
               value: {{ include "vault.scheme" . }}://{{ template "vault.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.server.service.port }}

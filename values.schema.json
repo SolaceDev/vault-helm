@@ -139,6 +139,13 @@
                 "pod": {
                     "type": "object",
                     "properties": {
+                        "affinity": {
+                            "type": [
+                              "null",
+                              "object",
+                              "string"
+                            ]
+                        },
                         "annotations": {
                             "type": [
                                 "object",
@@ -147,6 +154,13 @@
                         },
                         "extraLabels": {
                             "type": "object"
+                        },
+                        "nodeSelector": {
+                            "type": [
+                              "null",
+                              "object",
+                              "string"
+                            ]
                         },
                         "tolerations": {
                             "type": [
@@ -267,6 +281,12 @@
                             "type": "string"
                         },
                         "memRequest": {
+                            "type": "string"
+                        },
+                        "ephemeralLimit": {
+                            "type": "string"
+                        },
+                        "ephemeralRequest": {
                             "type": "string"
                         },
                         "template": {
@@ -1063,6 +1083,25 @@
                 },
                 "hostNetwork": {
                     "type": "boolean"
+                }
+            }
+        },
+        "serverTelemetry": {
+            "type": "object",
+            "properties": {
+                "prometheusRules": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "rules": {
+                            "type": "array"
+                        },
+                        "selectors": {
+                            "type": "object"
+                        }
+                    }
                 }
             }
         },
